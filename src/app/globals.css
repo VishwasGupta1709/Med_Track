@@ -426,6 +426,44 @@ dd {
   white-space: pre-wrap;
 }
 
+.confirmation-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+  border-top: 1px solid #dfe5dc;
+  padding-top: 16px;
+}
+
+.dose-actions {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  border-top: 1px solid #dfe5dc;
+  padding-top: 16px;
+}
+
+.dose-actions label {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.dose-actions input {
+  width: 100%;
+  border: 1px solid #cbd8d3;
+  border-radius: 6px;
+  padding: 12px;
+  color: #16211f;
+  font: inherit;
+}
+
+.dose-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 @media (max-width: 640px) {
   .page-header {
     display: grid;
@@ -436,6 +474,7 @@ dd {
   .medicine-details,
   .dose-card,
   .dose-details,
+  .confirmation-details,
   .form-row,
   .timing-row {
     grid-template-columns: 1fr;

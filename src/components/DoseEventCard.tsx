@@ -1,4 +1,5 @@
 import type { DoseEvent } from "@prisma/client";
+import { DoseEventActions } from "@/components/DoseEventActions";
 
 type DoseEventCardProps = {
   doseEvent: DoseEvent;
@@ -11,7 +12,16 @@ function formatTime(date: Date) {
   });
 }
 
+function formatDateTime(date: Date) {
+  return date.toLocaleString([], {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
 export function DoseEventCard({ doseEvent }: DoseEventCardProps) {
+  const canAct = doseEvent.status === "PENDING" || doseEvent.status === "DUE";
+
   return (
     <article className="dose-card">
       <div className="dose-time">
@@ -48,6 +58,43 @@ export function DoseEventCard({ doseEvent }: DoseEventCardProps) {
         {doseEvent.instructionsSnapshot ? (
           <p className="dose-instructions">{doseEvent.instructionsSnapshot}</p>
         ) : null}
+
+        {doseEvent.takenAt || doseEvent.skippedAt ? (
+          <dl className="confirmation-details">
+            {doseEvent.takenAt ? (
+              <div>
+                <dt>Taken</dt>
+                <dd>{formatDateTime(doseEvent.takenAt)}</dd>
+              </div>
+            ) : null}
+            {doseEvent.skippedAt ? (
+              <div>
+                <dt>Skipped</dt>
+                <dd>{formatDateTime(doseEvent.skippedAt)}</dd>
+              </div>
+            ) : null}
+            {doseEvent.confirmedByUserId ? (
+              <div>
+                <dt>Confirmed by</dt>
+                <dd>{doseEvent.confirmedByUserId}</dd>
+              </div>
+            ) : null}
+            {doseEvent.skippedReason ? (
+              <div>
+                <dt>Reason</dt>
+                <dd>{doseEvent.skippedReason}</dd>
+              </div>
+            ) : null}
+            {doseEvent.confirmationNote ? (
+              <div>
+                <dt>Note</dt>
+                <dd>{doseEvent.confirmationNote}</dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
+
+        {canAct ? <DoseEventActions doseEventId={doseEvent.id} /> : null}
       </div>
     </article>
   );

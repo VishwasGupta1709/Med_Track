@@ -69,6 +69,11 @@ model DoseEvent {
   instructionsSnapshot    String?
   timingLabelSnapshot     String?
   timingTimeSnapshot      String
+  takenAt                 DateTime?
+  skippedAt               DateTime?
+  skippedReason           String?
+  confirmedByUserId       String?
+  confirmationNote        String?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
