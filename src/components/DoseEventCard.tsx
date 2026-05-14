@@ -59,6 +59,19 @@ export function DoseEventCard({ doseEvent }: DoseEventCardProps) {
           <p className="dose-instructions">{doseEvent.instructionsSnapshot}</p>
         ) : null}
 
+        {doseEvent.missedAt ? (
+          <dl className="confirmation-details missed-details">
+            <div>
+              <dt>Missed</dt>
+              <dd>{formatDateTime(doseEvent.missedAt)}</dd>
+            </div>
+            <div>
+              <dt>Reason</dt>
+              <dd>Marked missed after cutoff</dd>
+            </div>
+          </dl>
+        ) : null}
+
         {doseEvent.takenAt || doseEvent.skippedAt ? (
           <dl className="confirmation-details">
             {doseEvent.takenAt ? (

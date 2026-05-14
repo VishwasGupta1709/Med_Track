@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DoseEventCard } from "@/components/DoseEventCard";
+import { ProcessMissedDosesButton } from "@/components/ProcessMissedDosesButton";
 import { ScheduleGenerateButton } from "@/components/ScheduleGenerateButton";
 import { prisma } from "@/lib/prisma";
 import { getTodayWindow } from "@/lib/schedule-generation";
@@ -59,6 +60,7 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
             Back to patient
           </Link>
           <ScheduleGenerateButton patientId={patient.id} />
+          <ProcessMissedDosesButton patientId={patient.id} />
         </div>
       </header>
 

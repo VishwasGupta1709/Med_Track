@@ -63,6 +63,11 @@ a {
   gap: 12px;
 }
 
+.header-action-stack {
+  display: grid;
+  gap: 6px;
+}
+
 .page-header h1 {
   margin: 0 0 8px;
   font-size: clamp(2rem, 5vw, 3rem);
@@ -327,6 +332,11 @@ dd {
   color: #1e6f5c;
 }
 
+.dose-card:has(.missed-details) .status-pill {
+  background: #f7e5e5;
+  color: #a33737;
+}
+
 .medicine-details {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -433,6 +443,10 @@ dd {
   margin-top: 16px;
   border-top: 1px solid #dfe5dc;
   padding-top: 16px;
+}
+
+.missed-details {
+  border-top-color: #edc8c8;
 }
 
 .dose-actions {

@@ -71,6 +71,7 @@ model DoseEvent {
   timingTimeSnapshot      String
   takenAt                 DateTime?
   skippedAt               DateTime?
+  missedAt                DateTime?
   skippedReason           String?
   confirmedByUserId       String?
   confirmationNote        String?
