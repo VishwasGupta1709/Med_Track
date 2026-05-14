@@ -17,6 +17,38 @@ model Patient {
   createdByUserId String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  medicines       Medicine[]
 
   @@index([createdByUserId])
+}
+
+model Medicine {
+  id              String           @id @default(cuid())
+  patientId       String
+  name            String
+  dosage          String?
+  form            String?
+  frequency       String?
+  foodInstruction String?
+  instructions    String?
+  status          String           @default("ACTIVE")
+  startDate       DateTime
+  endDate         DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  patient         Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  timings         MedicineTiming[]
+
+  @@index([patientId])
+  @@index([createdAt])
+}
+
+model MedicineTiming {
+  id         String   @id @default(cuid())
+  medicineId String
+  label      String?
+  timeOfDay  String
+  medicine   Medicine @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+
+  @@index([medicineId])
 }

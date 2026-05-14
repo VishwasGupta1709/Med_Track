@@ -56,6 +56,13 @@ a {
   margin-bottom: 28px;
 }
 
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 .page-header h1 {
   margin: 0 0 8px;
   font-size: clamp(2rem, 5vw, 3rem);
@@ -196,6 +203,43 @@ dd {
   font: inherit;
 }
 
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.timing-fieldset {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #dfe5dc;
+  border-radius: 8px;
+  margin: 0;
+  padding: 16px;
+}
+
+.timing-fieldset legend {
+  padding: 0 6px;
+  font-weight: 700;
+}
+
+.timing-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px auto auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.timing-add,
+.timing-remove {
+  min-height: 46px;
+  white-space: nowrap;
+}
+
+.timing-placeholder {
+  display: block;
+}
+
 .field-error,
 .form-error {
   color: #a33737;
@@ -223,13 +267,112 @@ dd {
   white-space: pre-wrap;
 }
 
+.medicine-nav-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 18px;
+}
+
+.medicine-nav-panel p {
+  margin: 0;
+  color: #60716d;
+}
+
+.medicine-list {
+  display: grid;
+  gap: 16px;
+}
+
+.medicine-card {
+  border: 1px solid #dfe5dc;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgb(22 33 31 / 5%);
+  padding: 20px;
+}
+
+.medicine-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.medicine-card h2 {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+}
+
+.medicine-card p {
+  margin: 0;
+  color: #60716d;
+}
+
+.status-pill,
+.timing-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.status-pill {
+  background: #e7f0ed;
+  color: #1e6f5c;
+}
+
+.medicine-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.timing-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.timing-pill {
+  background: #f0f3ef;
+  color: #40504d;
+}
+
+.medicine-instructions {
+  margin-top: 18px;
+  border-top: 1px solid #dfe5dc;
+  padding-top: 16px;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 640px) {
   .page-header {
     display: grid;
   }
 
   .patient-card dl,
-  .detail-grid {
+  .detail-grid,
+  .medicine-details,
+  .form-row,
+  .timing-row {
     grid-template-columns: 1fr;
+  }
+
+  .header-actions,
+  .medicine-nav-panel,
+  .medicine-card-header {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .timing-placeholder {
+    display: none;
   }
 }
