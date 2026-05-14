@@ -18,6 +18,7 @@ model Patient {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   medicines       Medicine[]
+  doseEvents      DoseEvent[]
 
   @@index([createdByUserId])
 }
@@ -38,6 +39,7 @@ model Medicine {
   updatedAt       DateTime         @updatedAt
   patient         Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
   timings         MedicineTiming[]
+  doseEvents      DoseEvent[]
 
   @@index([patientId])
   @@index([createdAt])
@@ -49,6 +51,32 @@ model MedicineTiming {
   label      String?
   timeOfDay  String
   medicine   Medicine @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  doseEvents DoseEvent[]
 
   @@index([medicineId])
+}
+
+model DoseEvent {
+  id                      String   @id @default(cuid())
+  patientId               String
+  medicineId              String
+  medicineTimingId        String
+  scheduledAt             DateTime
+  status                  String   @default("PENDING")
+  medicineNameSnapshot    String
+  dosageSnapshot          String?
+  foodInstructionSnapshot String?
+  instructionsSnapshot    String?
+  timingLabelSnapshot     String?
+  timingTimeSnapshot      String
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  patient        Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  medicine       Medicine       @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  medicineTiming MedicineTiming @relation(fields: [medicineTimingId], references: [id], onDelete: Cascade)
+
+  @@unique([medicineId, medicineTimingId, scheduledAt])
+  @@index([patientId, scheduledAt])
+  @@index([patientId, status])
 }

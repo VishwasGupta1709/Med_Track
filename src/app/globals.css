@@ -352,6 +352,80 @@ dd {
   white-space: pre-wrap;
 }
 
+.schedule-list,
+.dose-list {
+  display: grid;
+  gap: 16px;
+}
+
+.schedule-group {
+  display: grid;
+  gap: 12px;
+}
+
+.schedule-group h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.dose-card {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 18px;
+  border: 1px solid #dfe5dc;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgb(22 33 31 / 5%);
+  padding: 20px;
+}
+
+.dose-time {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.dose-time strong {
+  font-size: 1.2rem;
+}
+
+.dose-time span {
+  color: #60716d;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.dose-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dose-card h3 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+}
+
+.dose-card p {
+  margin: 0;
+  color: #60716d;
+}
+
+.dose-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.dose-instructions {
+  margin-top: 16px;
+  border-top: 1px solid #dfe5dc;
+  padding-top: 16px;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 640px) {
   .page-header {
     display: grid;
@@ -360,6 +434,8 @@ dd {
   .patient-card dl,
   .detail-grid,
   .medicine-details,
+  .dose-card,
+  .dose-details,
   .form-row,
   .timing-row {
     grid-template-columns: 1fr;
@@ -367,7 +443,8 @@ dd {
 
   .header-actions,
   .medicine-nav-panel,
-  .medicine-card-header {
+  .medicine-card-header,
+  .dose-card-header {
     display: grid;
     justify-content: stretch;
   }

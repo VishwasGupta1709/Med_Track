@@ -75,6 +75,16 @@ export default async function PatientDetailPage({ params }: PatientDetailPagePro
           View medicines
         </Link>
       </section>
+
+      <section className="detail-panel medicine-nav-panel">
+        <div>
+          <h2>Schedule</h2>
+          <p>Generate dose events and review today&apos;s medicine schedule.</p>
+        </div>
+        <Link className="primary-button" href={`/patients/${patient.id}/schedule`}>
+          View schedule
+        </Link>
+      </section>
     </main>
   );
 }
