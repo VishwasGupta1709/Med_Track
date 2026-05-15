@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
+import { ACTIONABLE_DOSE_STATUSES, DOSE_STATUS } from "@/lib/dose-status";
 
 const MISSED_CUTOFF_MINUTES = 30;
-const PROCESSABLE_STATUSES = ["PENDING", "DUE"];
 
 export type MissedDoseProcessingResult = {
   cutoffMinutes: number;
@@ -23,11 +23,11 @@ export async function processMissedDosesForPatient(
   const result = await prisma.doseEvent.updateMany({
     where: {
       patientId,
-      status: { in: PROCESSABLE_STATUSES },
+      status: { in: [...ACTIONABLE_DOSE_STATUSES] },
       scheduledAt: { lte: cutoffAt },
     },
     data: {
-      status: "MISSED",
+      status: DOSE_STATUS.MISSED,
       missedAt: now,
     },
   });

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { DoseEventCard } from "@/components/DoseEventCard";
 import { ProcessMissedDosesButton } from "@/components/ProcessMissedDosesButton";
 import { ScheduleGenerateButton } from "@/components/ScheduleGenerateButton";
+import { DOSE_STATUS } from "@/lib/dose-status";
 import { prisma } from "@/lib/prisma";
 import { getTodayWindow } from "@/lib/schedule-generation";
 
@@ -16,7 +17,14 @@ type PatientSchedulePageProps = {
   }>;
 };
 
-const STATUS_ORDER = ["PENDING", "DUE", "LATE", "TAKEN", "MISSED", "SKIPPED"];
+const STATUS_ORDER = [
+  DOSE_STATUS.PENDING,
+  DOSE_STATUS.DUE,
+  DOSE_STATUS.LATE,
+  DOSE_STATUS.TAKEN,
+  DOSE_STATUS.MISSED,
+  DOSE_STATUS.SKIPPED,
+];
 
 export default async function PatientSchedulePage({ params }: PatientSchedulePageProps) {
   const { id } = await params;

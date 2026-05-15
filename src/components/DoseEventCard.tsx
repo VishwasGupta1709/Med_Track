@@ -1,5 +1,6 @@
 import type { DoseEvent } from "@prisma/client";
 import { DoseEventActions } from "@/components/DoseEventActions";
+import { ACTIONABLE_DOSE_STATUSES } from "@/lib/dose-status";
 
 type DoseEventCardProps = {
   doseEvent: DoseEvent;
@@ -20,7 +21,7 @@ function formatDateTime(date: Date) {
 }
 
 export function DoseEventCard({ doseEvent }: DoseEventCardProps) {
-  const canAct = doseEvent.status === "PENDING" || doseEvent.status === "DUE";
+  const canAct = (ACTIONABLE_DOSE_STATUSES as readonly string[]).includes(doseEvent.status);
 
   return (
     <article className="dose-card">

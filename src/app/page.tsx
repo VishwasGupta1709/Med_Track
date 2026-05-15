@@ -1,11 +1,17 @@
 import Link from "next/link";
 import { DashboardPatientCard } from "@/components/DashboardPatientCard";
+import { ACTIONABLE_DOSE_STATUSES, DOSE_STATUS } from "@/lib/dose-status";
 import { prisma } from "@/lib/prisma";
 import { getTodayWindow } from "@/lib/schedule-generation";
 
 const DEMO_USER_ID = "demo-user";
-const DASHBOARD_STATUSES = ["PENDING", "DUE", "TAKEN", "SKIPPED", "MISSED"] as const;
-const UPCOMING_STATUSES = ["PENDING", "DUE"];
+const DASHBOARD_STATUSES = [
+  DOSE_STATUS.PENDING,
+  DOSE_STATUS.DUE,
+  DOSE_STATUS.TAKEN,
+  DOSE_STATUS.SKIPPED,
+  DOSE_STATUS.MISSED,
+] as const;
 
 type DashboardStatus = (typeof DASHBOARD_STATUSES)[number];
 type StatusCounts = Record<DashboardStatus, number>;
@@ -24,11 +30,11 @@ export const dynamic = "force-dynamic";
 
 function createStatusCounts(): StatusCounts {
   return {
-    PENDING: 0,
-    DUE: 0,
-    TAKEN: 0,
-    SKIPPED: 0,
-    MISSED: 0,
+    [DOSE_STATUS.PENDING]: 0,
+    [DOSE_STATUS.DUE]: 0,
+    [DOSE_STATUS.TAKEN]: 0,
+    [DOSE_STATUS.SKIPPED]: 0,
+    [DOSE_STATUS.MISSED]: 0,
   };
 }
 
@@ -48,7 +54,8 @@ function findNextDose<T extends { scheduledAt: Date; status: string }>(doseEvent
   return (
     doseEvents.find(
       (doseEvent) =>
-        UPCOMING_STATUSES.includes(doseEvent.status) && doseEvent.scheduledAt.getTime() >= now.getTime(),
+        (ACTIONABLE_DOSE_STATUSES as readonly string[]).includes(doseEvent.status) &&
+        doseEvent.scheduledAt.getTime() >= now.getTime(),
     ) || null
   );
 }

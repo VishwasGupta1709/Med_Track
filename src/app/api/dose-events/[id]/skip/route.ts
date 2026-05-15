@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ACTIONABLE_DOSE_STATUSES, DOSE_STATUS } from "@/lib/dose-status";
 import { prisma } from "@/lib/prisma";
 import {
   normalizeDoseEventActionBody,
@@ -6,7 +7,6 @@ import {
 } from "@/lib/dose-event-validation";
 
 const DEMO_USER_ID = "demo-user";
-const ACTIONABLE_STATUSES = ["PENDING", "DUE"];
 
 type RouteContext = {
   params: Promise<{
@@ -40,10 +40,10 @@ export async function POST(request: Request, context: RouteContext) {
   const updateResult = await prisma.doseEvent.updateMany({
     where: {
       id,
-      status: { in: ACTIONABLE_STATUSES },
+      status: { in: [...ACTIONABLE_DOSE_STATUSES] },
     },
     data: {
-      status: "SKIPPED",
+      status: DOSE_STATUS.SKIPPED,
       skippedAt: new Date(),
       takenAt: null,
       confirmedByUserId: DEMO_USER_ID,
