@@ -20,6 +20,7 @@ model Patient {
   medicines       Medicine[]
   doseEvents      DoseEvent[]
   bpReadings      BPReading[]
+  followUps       FollowUp[]
 
   @@index([createdByUserId])
 }
@@ -39,6 +40,25 @@ model BPReading {
 
   @@index([patientId])
   @@index([patientId, measuredAt])
+}
+
+model FollowUp {
+  id             String   @id @default(cuid())
+  patientId      String
+  appointmentAt  DateTime
+  doctorName     String?
+  hospitalName   String?
+  reason         String?
+  notes          String?
+  status         String   @default("UPCOMING")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([patientId, appointmentAt])
+  @@index([patientId, status])
 }
 
 model Medicine {
