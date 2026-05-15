@@ -32,8 +32,9 @@ export function DueDoseAlert({ dueDoses }: DueDoseAlertProps) {
         <div>
           <p>Needs attention</p>
           <h2 id="due-alert-heading">Due now</h2>
+          <span>These doses need attention now.</span>
         </div>
-        <strong>{dueDoses.length}</strong>
+        <strong aria-label={`${dueDoses.length} due doses`}>{dueDoses.length}</strong>
       </div>
 
       <div className="due-alert-list">
@@ -42,8 +43,11 @@ export function DueDoseAlert({ dueDoses }: DueDoseAlertProps) {
             className="due-alert-item"
             key={`${dose.patientId}-${dose.medicineNameSnapshot}-${dose.scheduledAt.toISOString()}`}
           >
-            <div>
+            <div className="due-alert-time">
               <strong>{formatTime(dose.scheduledAt)}</strong>
+              <span>DUE</span>
+            </div>
+            <div>
               <h3>{dose.medicineNameSnapshot}</h3>
               <p>
                 {dose.patientName}
@@ -52,7 +56,7 @@ export function DueDoseAlert({ dueDoses }: DueDoseAlertProps) {
               </p>
             </div>
             <Link className="secondary-button" href={`/patients/${dose.patientId}/schedule`}>
-              View schedule
+              Open schedule
             </Link>
           </article>
         ))}
