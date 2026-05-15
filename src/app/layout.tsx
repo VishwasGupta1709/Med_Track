@@ -17,12 +17,17 @@ export default function RootLayout({
       <body>
         <div className="app-shell">
           <nav className="top-nav">
-            <Link className="brand" href="/patients">
+            <Link className="brand" href="/">
               MedTrack
             </Link>
-            <Link className="nav-link" href="/patients/new">
-              New patient
-            </Link>
+            <div className="nav-links">
+              <Link className="nav-link" href="/">
+                Dashboard
+              </Link>
+              <Link className="nav-link" href="/patients/new">
+                New patient
+              </Link>
+            </div>
           </nav>
           {children}
         </div>
