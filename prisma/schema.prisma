@@ -19,8 +19,26 @@ model Patient {
   updatedAt       DateTime @updatedAt
   medicines       Medicine[]
   doseEvents      DoseEvent[]
+  bpReadings      BPReading[]
 
   @@index([createdByUserId])
+}
+
+model BPReading {
+  id          String   @id @default(cuid())
+  patientId   String
+  systolic    Int
+  diastolic   Int
+  pulse       Int?
+  measuredAt  DateTime
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([patientId, measuredAt])
 }
 
 model Medicine {
