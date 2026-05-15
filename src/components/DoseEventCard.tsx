@@ -67,29 +67,42 @@ export function DoseEventCard({ doseEvent }: DoseEventCardProps) {
               <dd>{formatDateTime(doseEvent.missedAt)}</dd>
             </div>
             <div>
-              <dt>Reason</dt>
-              <dd>Marked missed after cutoff</dd>
+              <dt>Source</dt>
+              <dd>Automatic cutoff processing</dd>
             </div>
           </dl>
         ) : null}
 
-        {doseEvent.takenAt || doseEvent.skippedAt ? (
+        {doseEvent.takenAt ? (
           <dl className="confirmation-details">
-            {doseEvent.takenAt ? (
-              <div>
-                <dt>Taken</dt>
-                <dd>{formatDateTime(doseEvent.takenAt)}</dd>
-              </div>
-            ) : null}
-            {doseEvent.skippedAt ? (
-              <div>
-                <dt>Skipped</dt>
-                <dd>{formatDateTime(doseEvent.skippedAt)}</dd>
-              </div>
-            ) : null}
+            <div>
+              <dt>Taken</dt>
+              <dd>{formatDateTime(doseEvent.takenAt)}</dd>
+            </div>
             {doseEvent.confirmedByUserId ? (
               <div>
-                <dt>Confirmed by</dt>
+                <dt>Marked by</dt>
+                <dd>{doseEvent.confirmedByUserId}</dd>
+              </div>
+            ) : null}
+            {doseEvent.confirmationNote ? (
+              <div>
+                <dt>Note</dt>
+                <dd>{doseEvent.confirmationNote}</dd>
+              </div>
+            ) : null}
+          </dl>
+        ) : null}
+
+        {doseEvent.skippedAt ? (
+          <dl className="confirmation-details">
+            <div>
+              <dt>Skipped</dt>
+              <dd>{formatDateTime(doseEvent.skippedAt)}</dd>
+            </div>
+            {doseEvent.confirmedByUserId ? (
+              <div>
+                <dt>Marked by</dt>
                 <dd>{doseEvent.confirmedByUserId}</dd>
               </div>
             ) : null}
