@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DashboardPatientCard } from "@/components/DashboardPatientCard";
-import { ACTIONABLE_DOSE_STATUSES, DOSE_STATUS } from "@/lib/dose-status";
+import { DOSE_STATUS } from "@/lib/dose-status";
 import { prisma } from "@/lib/prisma";
 import { getTodayWindow } from "@/lib/schedule-generation";
 
@@ -51,11 +51,16 @@ function countStatuses(doseEvents: { status: string }[]) {
 }
 
 function findNextDose<T extends { scheduledAt: Date; status: string }>(doseEvents: T[], now: Date) {
+  const dueDose = doseEvents.find((doseEvent) => doseEvent.status === DOSE_STATUS.DUE);
+
+  if (dueDose) {
+    return dueDose;
+  }
+
   return (
     doseEvents.find(
       (doseEvent) =>
-        (ACTIONABLE_DOSE_STATUSES as readonly string[]).includes(doseEvent.status) &&
-        doseEvent.scheduledAt.getTime() >= now.getTime(),
+        doseEvent.status === DOSE_STATUS.PENDING && doseEvent.scheduledAt.getTime() >= now.getTime(),
     ) || null
   );
 }
