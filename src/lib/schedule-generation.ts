@@ -1,4 +1,5 @@
 import type { Medicine, MedicineTiming, PrismaClient } from "@prisma/client";
+import { DOSE_STATUS } from "@/lib/dose-status";
 
 const GENERATION_DAYS = 7;
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -62,7 +63,7 @@ function buildDoseEvents(patientId: string, medicines: MedicineWithTimings[], wi
           medicineId: medicine.id,
           medicineTimingId: timing.id,
           scheduledAt: buildScheduledAt(targetDate, timing.timeOfDay),
-          status: "PENDING",
+          status: DOSE_STATUS.PENDING,
           medicineNameSnapshot: medicine.name,
           dosageSnapshot: medicine.dosage,
           foodInstructionSnapshot: medicine.foodInstruction,

@@ -41,11 +41,15 @@ export async function POST(request: Request, context: RouteContext) {
     where: {
       id,
       status: { in: [...ACTIONABLE_DOSE_STATUSES] },
+      takenAt: null,
+      skippedAt: null,
+      missedAt: null,
     },
     data: {
       status: DOSE_STATUS.TAKEN,
       takenAt: new Date(),
       skippedAt: null,
+      missedAt: null,
       skippedReason: null,
       confirmedByUserId: DEMO_USER_ID,
       confirmationNote: input.confirmationNote,

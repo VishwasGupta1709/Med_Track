@@ -24,6 +24,9 @@ export async function processMissedDosesForPatient(
     where: {
       patientId,
       status: { in: [...ACTIONABLE_DOSE_STATUSES] },
+      takenAt: null,
+      skippedAt: null,
+      missedAt: null,
       scheduledAt: { lte: cutoffAt },
     },
     data: {
