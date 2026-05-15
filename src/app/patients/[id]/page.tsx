@@ -95,6 +95,16 @@ export default async function PatientDetailPage({ params }: PatientDetailPagePro
           View BP readings
         </Link>
       </section>
+
+      <section className="detail-panel medicine-nav-panel">
+        <div>
+          <h2>Follow-ups</h2>
+          <p>Record and review doctor follow-up appointments for this patient.</p>
+        </div>
+        <Link className="primary-button" href={`/patients/${patient.id}/follow-ups`}>
+          View follow-ups
+        </Link>
+      </section>
     </main>
   );
 }
