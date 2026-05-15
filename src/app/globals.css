@@ -304,6 +304,14 @@ dd {
   padding: 20px;
 }
 
+.bp-reading-card {
+  border: 1px solid #dfe5dc;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgb(22 33 31 / 5%);
+  padding: 20px;
+}
+
 .medicine-card-header {
   display: flex;
   align-items: flex-start;

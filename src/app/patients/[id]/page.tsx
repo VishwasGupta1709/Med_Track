@@ -85,6 +85,16 @@ export default async function PatientDetailPage({ params }: PatientDetailPagePro
           View schedule
         </Link>
       </section>
+
+      <section className="detail-panel medicine-nav-panel">
+        <div>
+          <h2>BP readings</h2>
+          <p>Record and review manually entered BP readings for this patient.</p>
+        </div>
+        <Link className="primary-button" href={`/patients/${patient.id}/bp-readings`}>
+          View BP readings
+        </Link>
+      </section>
     </main>
   );
 }
