@@ -16,19 +16,23 @@ export function ProcessMissedDosesButton({ patientId }: ProcessMissedDosesButton
     setError("");
     setIsProcessing(true);
 
-    const response = await fetch(`/api/patients/${patientId}/missed-doses/process`, {
-      method: "POST",
-    });
+    try {
+      const response = await fetch(`/api/patients/${patientId}/missed-doses/process`, {
+        method: "POST",
+      });
 
-    setIsProcessing(false);
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        setError(body?.error || "Unable to process missed doses.");
+        return;
+      }
 
-    if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as { error?: string } | null;
-      setError(body?.error || "Unable to process missed doses.");
-      return;
+      router.refresh();
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setIsProcessing(false);
     }
-
-    router.refresh();
   }
 
   return (

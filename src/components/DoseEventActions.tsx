@@ -22,29 +22,33 @@ export function DoseEventActions({ doseEventId }: DoseEventActionsProps) {
         ? { confirmationNote: note }
         : { skippedReason: note };
 
-    const response = await fetch(`/api/dose-events/${doseEventId}/${action}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const response = await fetch(`/api/dose-events/${doseEventId}/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    setIsSubmitting(null);
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as
+          | { error?: string; errors?: Record<string, string> }
+          | null;
+        setError(
+          body?.error ||
+            body?.errors?.confirmationNote ||
+            body?.errors?.skippedReason ||
+            "Unable to update dose.",
+        );
+        return;
+      }
 
-    if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as
-        | { error?: string; errors?: Record<string, string> }
-        | null;
-      setError(
-        body?.error ||
-          body?.errors?.confirmationNote ||
-          body?.errors?.skippedReason ||
-          "Unable to update dose.",
-      );
-      return;
+      setNote("");
+      router.refresh();
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setIsSubmitting(null);
     }
-
-    setNote("");
-    router.refresh();
   }
 
   return (
