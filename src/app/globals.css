@@ -74,6 +74,27 @@ a {
   gap: 6px;
 }
 
+.schedule-actions {
+  align-items: flex-start;
+}
+
+.schedule-action-item {
+  display: grid;
+  gap: 6px;
+  justify-items: stretch;
+  max-width: 220px;
+}
+
+.schedule-action-item button {
+  width: 100%;
+}
+
+.action-feedback {
+  max-width: 220px;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
 .page-header h1 {
   margin: 0 0 8px;
   font-size: clamp(2rem, 5vw, 3rem);
@@ -252,14 +273,20 @@ dd {
 }
 
 .field-error,
-.form-error {
+.form-error,
+.form-success {
   color: #a33737;
   font-size: 0.9rem;
   font-weight: 650;
 }
 
-.form-error {
+.form-error,
+.form-success {
   margin: 0;
+}
+
+.form-success {
+  color: #1e6f5c;
 }
 
 .detail-panel h2 {

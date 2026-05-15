@@ -64,7 +64,7 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
           <h1>Today&apos;s schedule</h1>
           <p>{patient.fullName}</p>
         </div>
-        <div className="header-actions">
+        <div className="header-actions schedule-actions">
           <Link className="secondary-button" href={`/patients/${patient.id}`}>
             Back to patient
           </Link>

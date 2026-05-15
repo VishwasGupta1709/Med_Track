@@ -7,13 +7,19 @@ type ProcessMissedDosesButtonProps = {
   patientId: string;
 };
 
+type ProcessMissedDosesResult = {
+  processed: number;
+};
+
 export function ProcessMissedDosesButton({ patientId }: ProcessMissedDosesButtonProps) {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
   async function handleProcess() {
     setError("");
+    setMessage("");
     setIsProcessing(true);
 
     try {
@@ -27,6 +33,12 @@ export function ProcessMissedDosesButton({ patientId }: ProcessMissedDosesButton
         return;
       }
 
+      const body = (await response.json()) as ProcessMissedDosesResult;
+      setMessage(
+        body.processed > 0
+          ? `Processed ${body.processed} missed dose(s).`
+          : "No missed doses found. Doses become missed after the configured cutoff.",
+      );
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
@@ -36,7 +48,7 @@ export function ProcessMissedDosesButton({ patientId }: ProcessMissedDosesButton
   }
 
   return (
-    <div className="header-action-stack">
+    <div className="schedule-action-item">
       <button
         className="secondary-button"
         type="button"
@@ -45,7 +57,8 @@ export function ProcessMissedDosesButton({ patientId }: ProcessMissedDosesButton
       >
         {isProcessing ? "Processing..." : "Process missed doses"}
       </button>
-      {error ? <p className="form-error">{error}</p> : null}
+      {error ? <p className="form-error action-feedback">{error}</p> : null}
+      {message ? <p className="form-success action-feedback">{message}</p> : null}
     </div>
   );
 }
