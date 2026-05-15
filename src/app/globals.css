@@ -643,6 +643,33 @@ dd {
   padding: 20px;
 }
 
+.dashboard-latest-bp {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid #dfe5dc;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgb(22 33 31 / 5%);
+  padding: 20px;
+}
+
+.dashboard-latest-bp strong {
+  color: #1e6f5c;
+  font-size: 1.5rem;
+}
+
+.dashboard-latest-bp h3 {
+  margin: 6px 0;
+  font-size: 1.25rem;
+}
+
+.dashboard-latest-bp p {
+  margin: 0;
+  color: #60716d;
+}
+
 .dashboard-next-dose strong {
   color: #1e6f5c;
   font-size: 1.15rem;
@@ -761,6 +788,7 @@ dd {
   .dose-card-header,
   .due-alert-heading,
   .due-alert-item,
+  .dashboard-latest-bp,
   .dashboard-next-dose,
   .dashboard-patient-header {
     display: grid;

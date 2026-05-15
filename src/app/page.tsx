@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DashboardPatientCard } from "@/components/DashboardPatientCard";
+import { DashboardLatestBPCard } from "@/components/DashboardLatestBPCard";
 import { DueDoseAlert } from "@/components/DueDoseAlert";
 import { DOSE_STATUS } from "@/lib/dose-status";
 import { prisma } from "@/lib/prisma";
@@ -23,6 +24,14 @@ type DashboardDoseEvent = {
   dosageSnapshot: string | null;
   timingLabelSnapshot: string | null;
   timingTimeSnapshot: string;
+  patientId: string;
+  patientName: string;
+};
+type DashboardBPReading = {
+  systolic: number;
+  diastolic: number;
+  pulse: number | null;
+  measuredAt: Date;
   patientId: string;
   patientName: string;
 };
@@ -92,6 +101,10 @@ export default async function DashboardPage() {
         },
         orderBy: { scheduledAt: "asc" },
       },
+      bpReadings: {
+        take: 1,
+        orderBy: { measuredAt: "desc" },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -108,6 +121,19 @@ export default async function DashboardPage() {
       patientName: patient.fullName,
     })),
   );
+  const latestBPReading =
+    patients
+      .flatMap<DashboardBPReading>((patient) =>
+        patient.bpReadings.map((bpReading) => ({
+          systolic: bpReading.systolic,
+          diastolic: bpReading.diastolic,
+          pulse: bpReading.pulse,
+          measuredAt: bpReading.measuredAt,
+          patientId: patient.id,
+          patientName: patient.fullName,
+        })),
+      )
+      .sort((first, second) => second.measuredAt.getTime() - first.measuredAt.getTime())[0] || null;
   const totalStatusCounts = countStatuses(allDoseEvents);
   const activeMedicineCount = patients.reduce((total, patient) => total + patient.medicines.length, 0);
   const dueDoseEvents = allDoseEvents.filter((doseEvent) => doseEvent.status === DOSE_STATUS.DUE);
@@ -196,6 +222,8 @@ export default async function DashboardPage() {
               )}
             </div>
           </section>
+
+          <DashboardLatestBPCard latestBPReading={latestBPReading} />
 
           <section className="dashboard-section" aria-labelledby="patient-summary-heading">
             <div className="section-heading">
