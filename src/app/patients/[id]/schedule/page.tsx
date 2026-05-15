@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DoseEventCard } from "@/components/DoseEventCard";
+import { ProcessDueDosesButton } from "@/components/ProcessDueDosesButton";
 import { ProcessMissedDosesButton } from "@/components/ProcessMissedDosesButton";
 import { ScheduleGenerateButton } from "@/components/ScheduleGenerateButton";
 import { DOSE_STATUS } from "@/lib/dose-status";
@@ -68,6 +69,7 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
             Back to patient
           </Link>
           <ScheduleGenerateButton patientId={patient.id} />
+          <ProcessDueDosesButton patientId={patient.id} />
           <ProcessMissedDosesButton patientId={patient.id} />
         </div>
       </header>
