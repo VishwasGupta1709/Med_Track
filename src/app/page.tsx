@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DashboardPatientCard } from "@/components/DashboardPatientCard";
+import { DueDoseAlert } from "@/components/DueDoseAlert";
 import { DOSE_STATUS } from "@/lib/dose-status";
 import { prisma } from "@/lib/prisma";
 import { getTodayWindow } from "@/lib/schedule-generation";
@@ -109,6 +110,7 @@ export default async function DashboardPage() {
   );
   const totalStatusCounts = countStatuses(allDoseEvents);
   const activeMedicineCount = patients.reduce((total, patient) => total + patient.medicines.length, 0);
+  const dueDoseEvents = allDoseEvents.filter((doseEvent) => doseEvent.status === DOSE_STATUS.DUE);
   const nextDose = findNextDose(allDoseEvents, now);
 
   return (
@@ -138,6 +140,8 @@ export default async function DashboardPage() {
         </section>
       ) : (
         <>
+          <DueDoseAlert dueDoses={dueDoseEvents} />
+
           <section className="dashboard-summary-grid" aria-label="Dashboard summary">
             <dl className="dashboard-summary-card">
               <dt>Patients</dt>

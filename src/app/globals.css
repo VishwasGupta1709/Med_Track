@@ -488,6 +488,69 @@ dd {
   max-width: 1080px;
 }
 
+.due-alert {
+  display: grid;
+  gap: 16px;
+  border: 1px solid #edc8c8;
+  border-radius: 8px;
+  background: #fff7f7;
+  box-shadow: 0 8px 20px rgb(22 33 31 / 5%);
+  margin-bottom: 28px;
+  padding: 20px;
+}
+
+.due-alert-heading,
+.due-alert-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.due-alert-heading p {
+  margin: 0 0 4px;
+  color: #a33737;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.due-alert-heading h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.due-alert-heading > strong {
+  color: #a33737;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.due-alert-list {
+  display: grid;
+  gap: 12px;
+}
+
+.due-alert-item {
+  border-top: 1px solid #edc8c8;
+  padding-top: 14px;
+}
+
+.due-alert-item strong {
+  color: #a33737;
+  font-size: 1.1rem;
+}
+
+.due-alert-item h3 {
+  margin: 4px 0;
+  font-size: 1.15rem;
+}
+
+.due-alert-item p {
+  margin: 0;
+  color: #60716d;
+}
+
 .dashboard-summary-grid,
 .dashboard-status-grid {
   display: grid;
@@ -654,6 +717,8 @@ dd {
   .medicine-nav-panel,
   .medicine-card-header,
   .dose-card-header,
+  .due-alert-heading,
+  .due-alert-item,
   .dashboard-next-dose,
   .dashboard-patient-header {
     display: grid;
