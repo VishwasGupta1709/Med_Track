@@ -90,8 +90,8 @@ describe("generateDoseEventsForPatient", () => {
     const result = await generateDoseEventsForPatient(prisma, "patient-1");
     const call = createMany.mock.calls[0][0];
 
-    expect(result.attempted).toBe(8);
-    expect(call.data).toHaveLength(8);
+    expect(result.attempted).toBe(7);
+    expect(call.data).toHaveLength(7);
     expect(call.data.every((event) => event.medicineTimingId === "valid")).toBe(true);
   });
 
@@ -107,8 +107,8 @@ describe("generateDoseEventsForPatient", () => {
     const result = await generateDoseEventsForPatient(prisma, "patient-1");
     const call = createMany.mock.calls[0][0];
 
-    expect(result.attempted).toBe(6);
-    expect(call.data).toHaveLength(6);
+    expect(result.attempted).toBe(5);
+    expect(call.data).toHaveLength(5);
     expect(call.data[0].scheduledAt.getDate()).toBe(18);
   });
 
@@ -144,7 +144,7 @@ describe("generateDoseEventsForPatient", () => {
     );
   });
 
-  it("currently creates events for 8 calendar days with the inclusive generation loop", async () => {
+  it("creates events for exactly 7 calendar days", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 4, 16, 10, 0));
     const { prisma, createMany } = createPrismaMock([createMedicine()]);
@@ -155,9 +155,9 @@ describe("generateDoseEventsForPatient", () => {
       call.data.map((event) => event.scheduledAt.toISOString().slice(0, 10)),
     );
 
-    expect(result.attempted).toBe(8);
-    expect(call.data).toHaveLength(8);
-    expect(scheduledDays.size).toBe(8);
+    expect(result.attempted).toBe(7);
+    expect(call.data).toHaveLength(7);
+    expect(scheduledDays.size).toBe(7);
     expect(call.data[0]).toMatchObject({
       patientId: "patient-1",
       status: DOSE_STATUS.PENDING,

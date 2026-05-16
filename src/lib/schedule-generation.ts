@@ -41,7 +41,7 @@ function buildScheduledAt(date: Date, timeOfDay: string) {
 function buildDoseEvents(patientId: string, medicines: MedicineWithTimings[], windowStart: Date) {
   const events = [];
 
-  for (let offset = 0; offset <= GENERATION_DAYS; offset += 1) {
+  for (let offset = 0; offset < GENERATION_DAYS; offset += 1) {
     const targetDate = addDays(windowStart, offset);
 
     for (const medicine of medicines) {
