@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DoseEventCard } from "@/components/DoseEventCard";
-import { ProcessDueDosesButton } from "@/components/ProcessDueDosesButton";
-import { ProcessMissedDosesButton } from "@/components/ProcessMissedDosesButton";
+import { ScheduleActions } from "@/components/ScheduleActions";
 import { ScheduleGenerateButton } from "@/components/ScheduleGenerateButton";
 import { DOSE_STATUS } from "@/lib/dose-status";
 import { prisma } from "@/lib/prisma";
@@ -64,14 +62,7 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
           <h1>Today&apos;s schedule</h1>
           <p>{patient.fullName}</p>
         </div>
-        <div className="header-actions schedule-actions">
-          <Link className="secondary-button" href={`/patients/${patient.id}`}>
-            Back to patient
-          </Link>
-          <ScheduleGenerateButton patientId={patient.id} />
-          <ProcessDueDosesButton patientId={patient.id} />
-          <ProcessMissedDosesButton patientId={patient.id} />
-        </div>
+        <ScheduleActions patientId={patient.id} />
       </header>
 
       {patient.doseEvents.length === 0 ? (
