@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ACTIONABLE_DOSE_STATUSES, DOSE_STATUS } from "@/lib/dose-status";
+import { skipDoseEventAction } from "@/lib/dose-event-actions";
 import { prisma } from "@/lib/prisma";
 import {
   normalizeDoseEventActionBody,
@@ -37,26 +37,9 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Dose event not found." }, { status: 404 });
   }
 
-  const updateResult = await prisma.doseEvent.updateMany({
-    where: {
-      id,
-      status: { in: [...ACTIONABLE_DOSE_STATUSES] },
-      takenAt: null,
-      skippedAt: null,
-      missedAt: null,
-    },
-    data: {
-      status: DOSE_STATUS.SKIPPED,
-      skippedAt: new Date(),
-      takenAt: null,
-      missedAt: null,
-      confirmedByUserId: DEMO_USER_ID,
-      skippedReason: input.skippedReason,
-      confirmationNote: input.confirmationNote,
-    },
-  });
+  const updateResult = await skipDoseEventAction(prisma, id, DEMO_USER_ID, input);
 
-  if (updateResult.count === 0) {
+  if (!updateResult.updated) {
     return NextResponse.json({ error: "Dose event can no longer be skipped." }, { status: 409 });
   }
 
