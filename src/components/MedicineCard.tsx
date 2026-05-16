@@ -12,6 +12,17 @@ function formatDate(date: Date) {
   return date.toLocaleDateString();
 }
 
+function formatFrequency(frequency: string) {
+  const normalizedFrequency = frequency.trim();
+
+  if (/^[1-9]\d*$/.test(normalizedFrequency)) {
+    const dailyCount = Number(normalizedFrequency);
+    return dailyCount === 1 ? "Once daily" : `${dailyCount} times daily`;
+  }
+
+  return frequency;
+}
+
 export function MedicineCard({ medicine }: MedicineCardProps) {
   return (
     <article className="medicine-card">
@@ -33,7 +44,7 @@ export function MedicineCard({ medicine }: MedicineCardProps) {
         {medicine.frequency ? (
           <div>
             <dt>Frequency</dt>
-            <dd>{medicine.frequency}</dd>
+            <dd>{formatFrequency(medicine.frequency)}</dd>
           </div>
         ) : null}
         {medicine.foodInstruction ? (
