@@ -45,8 +45,11 @@
 
 ## Non-Blocking UI Improvements
 
-- Medicine frequency display is unclear when shown as raw values like "2"
 - Schedule action result messages may remain visible and feel stale/confusing
+
+## Completed UI Improvements
+
+- Medicine frequency display now shows numeric values like "1" and "2" as caregiver-friendly text such as "Once daily" and "2 times daily"
 
 ## Safety Rule Confirmation
 
