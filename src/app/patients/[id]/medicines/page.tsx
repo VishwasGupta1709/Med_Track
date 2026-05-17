@@ -64,7 +64,7 @@ export default async function PatientMedicinesPage({ params }: PatientMedicinesP
       ) : (
         <section className="medicine-list" aria-label="Medicine list">
           {patient.medicines.map((medicine) => (
-            <MedicineCard key={medicine.id} medicine={medicine} />
+            <MedicineCard key={medicine.id} patientId={patient.id} medicine={medicine} />
           ))}
         </section>
       )}

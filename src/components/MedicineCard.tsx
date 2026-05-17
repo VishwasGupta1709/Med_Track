@@ -1,10 +1,12 @@
 import type { Medicine, MedicineTiming } from "@prisma/client";
+import { MedicineStopAction } from "@/components/MedicineStopAction";
 
 type MedicineWithTimings = Medicine & {
   timings: MedicineTiming[];
 };
 
 type MedicineCardProps = {
+  patientId: string;
   medicine: MedicineWithTimings;
 };
 
@@ -23,7 +25,7 @@ function formatFrequency(frequency: string) {
   return frequency;
 }
 
-export function MedicineCard({ medicine }: MedicineCardProps) {
+export function MedicineCard({ patientId, medicine }: MedicineCardProps) {
   return (
     <article className="medicine-card">
       <div className="medicine-card-header">
@@ -73,6 +75,12 @@ export function MedicineCard({ medicine }: MedicineCardProps) {
       </div>
 
       {medicine.instructions ? <p className="medicine-instructions">{medicine.instructions}</p> : null}
+
+      <MedicineStopAction
+        patientId={patientId}
+        medicineId={medicine.id}
+        medicineStatus={medicine.status}
+      />
     </article>
   );
 }
