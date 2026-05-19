@@ -47,6 +47,14 @@
 
 - Schedule action result messages may remain visible and feel stale/confusing
 
+## Dashboard And Schedule UX Polish Manual Test
+
+- Patient with no medicines sees guidance to add medicines manually before generating a schedule
+- Patient with medicines but no generated schedule sees Generate schedule, Add medicine, Back to patient, and Dashboard actions
+- Dashboard stays scannable when there are many missed doses and links to today's schedule for the full history
+- Stopped medicine history explanation appears on dashboard and schedule pages
+- Empty-state and compact-dashboard action buttons wrap cleanly on mobile viewport
+
 ## Completed UI Improvements
 
 - Medicine frequency display now shows numeric values like "1" and "2" as caregiver-friendly text such as "Once daily" and "2 times daily"

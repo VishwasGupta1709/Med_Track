@@ -209,6 +209,22 @@ dd {
   color: #60716d;
 }
 
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.helper-note {
+  border: 1px solid #dfe5dc;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #40504d;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+}
+
 .form-panel,
 .detail-panel {
   padding: 24px;
@@ -793,6 +809,23 @@ dd {
   gap: 10px;
 }
 
+.dashboard-compact-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #dfe5dc;
+  border-radius: 8px;
+  background: #ffffff;
+  margin-top: 12px;
+  padding: 16px;
+}
+
+.dashboard-compact-link p {
+  margin: 0;
+  color: #60716d;
+}
+
 @media (max-width: 640px) {
   .page-header {
     display: grid;
@@ -817,6 +850,7 @@ dd {
   .due-alert-item,
   .dashboard-latest-bp,
   .dashboard-next-dose,
+  .dashboard-compact-link,
   .dashboard-patient-header {
     display: grid;
     justify-content: stretch;

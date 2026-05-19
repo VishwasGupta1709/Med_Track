@@ -56,10 +56,15 @@ export default async function PatientMedicinesPage({ params }: PatientMedicinesP
       {patient.medicines.length === 0 ? (
         <section className="empty-state">
           <h2>No medicines yet</h2>
-          <p>Add the first medicine for this patient.</p>
-          <Link className="primary-button" href={`/patients/${patient.id}/medicines/new`}>
-            Add medicine
-          </Link>
+          <p>Add medicines manually, then generate a schedule from active medicines and timings.</p>
+          <div className="empty-state-actions">
+            <Link className="primary-button" href={`/patients/${patient.id}/medicines/new`}>
+              Add medicine
+            </Link>
+            <Link className="secondary-button" href={`/patients/${patient.id}`}>
+              Back to patient
+            </Link>
+          </div>
         </section>
       ) : (
         <section className="medicine-list" aria-label="Medicine list">

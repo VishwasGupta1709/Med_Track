@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 import { DoseEventCard } from "@/components/DoseEventCard";
 import { createPatientDashboardSummary } from "@/lib/patient-dashboard-summary";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +8,7 @@ import { getTodayWindow } from "@/lib/schedule-generation";
 import { refreshTodayScheduleStatusesForPatient } from "@/lib/today-schedule-status-processing";
 
 const DEMO_USER_ID = "demo-user";
+const MISSED_DOSE_DASHBOARD_LIMIT = 3;
 
 export const dynamic = "force-dynamic";
 
@@ -27,10 +29,12 @@ function DashboardDoseSection({
   title,
   emptyMessage,
   doseEvents,
+  children,
 }: {
   title: string;
   emptyMessage: string;
   doseEvents: Parameters<typeof DoseEventCard>[0]["doseEvent"][];
+  children?: ReactNode;
 }) {
   return (
     <section className="dashboard-section" aria-labelledby={`${title.toLowerCase().replace(/\s+/g, "-")}-heading`}>
@@ -48,6 +52,7 @@ function DashboardDoseSection({
           ))}
         </div>
       )}
+      {children}
     </section>
   );
 }
@@ -93,6 +98,8 @@ export default async function PatientDashboardPage({ params }: PatientDashboardP
   }
 
   const dashboardSummary = createPatientDashboardSummary(patientWithDoseEvents.doseEvents, now);
+  const visibleMissedDoses = dashboardSummary.missedToday.slice(0, MISSED_DOSE_DASHBOARD_LIMIT);
+  const hiddenMissedDoseCount = dashboardSummary.missedToday.length - visibleMissedDoses.length;
 
   return (
     <main className="page dashboard-page">
@@ -116,7 +123,9 @@ export default async function PatientDashboardPage({ params }: PatientDashboardP
           <div>
             <strong>{dashboardSummary.summaryLabel}</strong>
             <h2 id="schedule-status-heading">Medicine schedule status</h2>
-            <p>Today&apos;s dose status after automatic refresh.</p>
+            <p>
+              Statuses refresh automatically. Stopped medicines keep past dose history.
+            </p>
           </div>
         </div>
       </section>
@@ -150,24 +159,36 @@ export default async function PatientDashboardPage({ params }: PatientDashboardP
 
       <DashboardDoseSection
         title="Due now"
-        emptyMessage="No doses need attention right now."
+        emptyMessage="No doses need attention right now. Keep an eye on the next upcoming dose."
         doseEvents={dashboardSummary.dueNow}
       />
       <DashboardDoseSection
         title="Missed today"
-        emptyMessage="No missed doses today."
-        doseEvents={dashboardSummary.missedToday}
-      />
+        emptyMessage="No missed doses today. Today's completed and upcoming doses are listed below."
+        doseEvents={visibleMissedDoses}
+      >
+        {hiddenMissedDoseCount > 0 ? (
+          <div className="dashboard-compact-link">
+            <p>
+              Showing 3 of {dashboardSummary.missedToday.length} missed doses. Full missed-dose
+              history remains available on today&apos;s schedule.
+            </p>
+            <Link className="secondary-button" href={`/patients/${patientWithDoseEvents.id}/schedule`}>
+              View today&apos;s schedule
+            </Link>
+          </div>
+        ) : null}
+      </DashboardDoseSection>
       <DashboardDoseSection
         title="Next upcoming dose"
-        emptyMessage="No upcoming doses remaining today."
+        emptyMessage="No upcoming doses remaining today. Check completed and skipped doses for today's history."
         doseEvents={
           dashboardSummary.nextUpcomingDose ? [dashboardSummary.nextUpcomingDose] : []
         }
       />
       <DashboardDoseSection
         title="Completed today"
-        emptyMessage="No completed doses today."
+        emptyMessage="No completed doses yet today. Due doses can be marked taken when confirmed."
         doseEvents={dashboardSummary.completedToday}
       />
       <DashboardDoseSection

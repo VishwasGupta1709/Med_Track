@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DoseEventCard } from "@/components/DoseEventCard";
 import { ScheduleActions } from "@/components/ScheduleActions";
@@ -83,22 +84,42 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
       {patientWithSchedule.doseEvents.length === 0 ? (
         <section className="empty-state">
           <h2>No doses generated for today</h2>
-          <p>Generate a schedule from this patient&apos;s active medicines and timings.</p>
-          <ScheduleGenerateButton patientId={patientWithSchedule.id} />
+          <p>
+            Add medicines manually if needed, then generate today&apos;s schedule from active
+            medicines and timings.
+          </p>
+          <div className="empty-state-actions">
+            <ScheduleGenerateButton patientId={patientWithSchedule.id} />
+            <Link className="primary-button" href={`/patients/${patientWithSchedule.id}/medicines/new`}>
+              Add medicine
+            </Link>
+            <Link className="secondary-button" href={`/patients/${patientWithSchedule.id}`}>
+              Back to patient
+            </Link>
+            <Link className="secondary-button" href={`/patients/${patientWithSchedule.id}/dashboard`}>
+              Dashboard
+            </Link>
+          </div>
         </section>
       ) : (
-        <section className="schedule-list" aria-label="Today&apos;s dose schedule">
-          {statusGroups.map((group) => (
-            <div className="schedule-group" key={group.status}>
-              <h2>{group.status}</h2>
-              <div className="dose-list">
-                {group.doseEvents.map((doseEvent) => (
-                  <DoseEventCard key={doseEvent.id} doseEvent={doseEvent} />
-                ))}
+        <>
+          <p className="helper-note">
+            Today&apos;s statuses are refreshed automatically. Stopped medicines keep earlier dose
+            history.
+          </p>
+          <section className="schedule-list" aria-label="Today&apos;s dose schedule">
+            {statusGroups.map((group) => (
+              <div className="schedule-group" key={group.status}>
+                <h2>{group.status}</h2>
+                <div className="dose-list">
+                  {group.doseEvents.map((doseEvent) => (
+                    <DoseEventCard key={doseEvent.id} doseEvent={doseEvent} />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </section>
+            ))}
+          </section>
+        </>
       )}
     </main>
   );
