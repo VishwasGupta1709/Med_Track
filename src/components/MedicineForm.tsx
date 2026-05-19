@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { validateMedicineInput } from "@/lib/medicine-validation";
 
 type FormErrors = Partial<
   Record<"name" | "startDate" | "endDate" | "timings" | "form", string>
@@ -115,22 +116,10 @@ export function MedicineForm(props: MedicineFormProps) {
       })),
     };
 
-    const clientErrors: FormErrors = {};
-    if (!payload.name.trim()) {
-      clientErrors.name = "Medicine name is required.";
-    }
-    if (!payload.startDate) {
-      clientErrors.startDate = "Start date is required.";
-    }
-    if (!payload.timings.some((timing) => timing.timeOfDay)) {
-      clientErrors.timings = "At least one timing is required.";
-    }
-    if (payload.startDate && payload.endDate && payload.endDate < payload.startDate) {
-      clientErrors.endDate = "End date cannot be before start date.";
-    }
+    const validation = validateMedicineInput(payload);
 
-    if (Object.keys(clientErrors).length > 0) {
-      setErrors(clientErrors);
+    if (!validation.isValid) {
+      setErrors(validation.errors);
       setIsSubmitting(false);
       return;
     }
@@ -317,7 +306,7 @@ export function MedicineForm(props: MedicineFormProps) {
       </label>
 
       <button className="primary-button" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Saving..." : isEditMode ? "Save changes" : "Add medicine"}
+        {isSubmitting ? "Saving..." : isEditMode ? "Save medicine" : "Add medicine"}
       </button>
     </form>
   );
