@@ -61,6 +61,8 @@
 - Medicine becomes STOPPED after confirmation
 - Stop action disappears after the medicine is stopped
 - Stopping removes future reminders but preserves dose history
+- Stopping at 12:00 PM preserves a 9:00 AM pending/due dose for later missed-dose processing
+- Stopping only removes future PENDING dose events scheduled after the stop time
 - Safety confirmation: no medical advice or recommendation wording appears
 
 ## Safety Rule Confirmation

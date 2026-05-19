@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DOSE_STATUS } from "@/lib/dose-status";
 
 const prismaMocks = vi.hoisted(() => ({
   patientFindFirst: vi.fn(),
@@ -133,6 +134,20 @@ describe("stop medicine route", () => {
         endDate: stoppedAt.toISOString(),
       },
       removedFutureDoseEvents: 2,
+    });
+    expect(prismaMocks.medicineUpdate).toHaveBeenCalledWith({
+      where: { id: "medicine-1" },
+      data: {
+        status: "STOPPED",
+        endDate: stoppedAt,
+      },
+    });
+    expect(prismaMocks.doseEventDeleteMany).toHaveBeenCalledWith({
+      where: {
+        medicineId: "medicine-1",
+        scheduledAt: { gt: stoppedAt },
+        status: { in: [DOSE_STATUS.PENDING] },
+      },
     });
   });
 

@@ -3,11 +3,7 @@ import { DOSE_STATUS } from "@/lib/dose-status";
 
 export const MEDICINE_STOPPED_STATUS = "STOPPED";
 
-export const STOPPED_MEDICINE_CLEANUP_STATUSES = [
-  DOSE_STATUS.PENDING,
-  DOSE_STATUS.DUE,
-  DOSE_STATUS.LATE,
-] as const;
+export const STOPPED_MEDICINE_CLEANUP_STATUSES = [DOSE_STATUS.PENDING] as const;
 
 export type StoppableMedicine = Pick<Medicine, "id" | "endDate">;
 
@@ -28,7 +24,7 @@ export async function stopMedicine(
     const deletedDoseEvents = await tx.doseEvent.deleteMany({
       where: {
         medicineId: medicine.id,
-        scheduledAt: { gte: stoppedAt },
+        scheduledAt: { gt: stoppedAt },
         status: { in: [...STOPPED_MEDICINE_CLEANUP_STATUSES] },
       },
     });

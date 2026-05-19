@@ -5,6 +5,7 @@ import {
   STOPPED_MEDICINE_CLEANUP_STATUSES,
   stopMedicine,
 } from "@/lib/medicine-stop";
+import { DOSE_STATUS } from "@/lib/dose-status";
 
 function createPrismaMock() {
   const medicineUpdate = vi.fn();
@@ -85,28 +86,52 @@ describe("stopMedicine", () => {
     expect(updateCall.data).toEqual({ status: MEDICINE_STOPPED_STATUS });
   });
 
-  it("deletes only future non-terminal dose events for the medicine", async () => {
+  it("keeps pending doses scheduled before the stop time", async () => {
     const { prisma, medicineUpdate, doseEventDeleteMany } = createPrismaMock();
-    const stoppedAt = new Date("2026-05-16T10:00:00.000Z");
+    const stoppedAt = new Date("2026-05-16T12:00:00.000Z");
 
     medicineUpdate.mockResolvedValueOnce({ id: "medicine-1" });
-    doseEventDeleteMany.mockResolvedValueOnce({ count: 3 });
+    doseEventDeleteMany.mockResolvedValueOnce({ count: 0 });
 
-    const result = await stopMedicine(prisma, { id: "medicine-1", endDate: null }, stoppedAt);
+    await stopMedicine(prisma, { id: "medicine-1", endDate: null }, stoppedAt);
 
-    expect(result.removedFutureDoseEvents).toBe(3);
     expect(doseEventDeleteMany).toHaveBeenCalledWith({
       where: {
         medicineId: "medicine-1",
-        scheduledAt: { gte: stoppedAt },
+        scheduledAt: { gt: stoppedAt },
         status: { in: [...STOPPED_MEDICINE_CLEANUP_STATUSES] },
       },
     });
   });
 
-  it("does not target taken, skipped, or missed dose event history", async () => {
+  it("deletes future pending doses scheduled after the stop time", async () => {
     const { prisma, medicineUpdate, doseEventDeleteMany } = createPrismaMock();
-    const stoppedAt = new Date("2026-05-16T10:00:00.000Z");
+    const stoppedAt = new Date("2026-05-16T12:00:00.000Z");
+
+    medicineUpdate.mockResolvedValueOnce({ id: "medicine-1" });
+    doseEventDeleteMany.mockResolvedValueOnce({ count: 1 });
+
+    const result = await stopMedicine(prisma, { id: "medicine-1", endDate: null }, stoppedAt);
+
+    expect(result.removedFutureDoseEvents).toBe(1);
+    expect(doseEventDeleteMany).toHaveBeenCalledWith({
+      where: {
+        medicineId: "medicine-1",
+        scheduledAt: { gt: stoppedAt },
+        status: { in: [DOSE_STATUS.PENDING] },
+      },
+    });
+  });
+
+  it.each([
+    DOSE_STATUS.DUE,
+    DOSE_STATUS.TAKEN,
+    DOSE_STATUS.SKIPPED,
+    DOSE_STATUS.MISSED,
+    DOSE_STATUS.LATE,
+  ])("does not target %s dose events", async (status) => {
+    const { prisma, medicineUpdate, doseEventDeleteMany } = createPrismaMock();
+    const stoppedAt = new Date("2026-05-16T12:00:00.000Z");
 
     medicineUpdate.mockResolvedValueOnce({ id: "medicine-1" });
     doseEventDeleteMany.mockResolvedValueOnce({ count: 0 });
@@ -114,9 +139,8 @@ describe("stopMedicine", () => {
     await stopMedicine(prisma, { id: "medicine-1", endDate: null }, stoppedAt);
 
     const deleteCall = doseEventDeleteMany.mock.calls[0]?.[0];
-    expect(deleteCall.where.status.in).not.toContain("TAKEN");
-    expect(deleteCall.where.status.in).not.toContain("SKIPPED");
-    expect(deleteCall.where.status.in).not.toContain("MISSED");
+    expect(deleteCall.where.status.in).not.toContain(status);
+    expect(deleteCall.where.status.in).toEqual([DOSE_STATUS.PENDING]);
   });
 
   it("uses the requested medicine id in cleanup", async () => {
