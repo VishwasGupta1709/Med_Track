@@ -50,6 +50,7 @@
 ## Completed UI Improvements
 
 - Medicine frequency display now shows numeric values like "1" and "2" as caregiver-friendly text such as "Once daily" and "2 times daily"
+- Today's schedule refreshes due/missed dose statuses before display so old pending doses do not stay visually stale
 
 ## Medicine Stop UI Manual Test
 

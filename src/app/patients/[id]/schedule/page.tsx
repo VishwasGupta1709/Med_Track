@@ -5,6 +5,7 @@ import { ScheduleGenerateButton } from "@/components/ScheduleGenerateButton";
 import { DOSE_STATUS } from "@/lib/dose-status";
 import { prisma } from "@/lib/prisma";
 import { getTodayWindow } from "@/lib/schedule-generation";
+import { refreshTodayScheduleStatusesForPatient } from "@/lib/today-schedule-status-processing";
 
 const DEMO_USER_ID = "demo-user";
 
@@ -33,6 +34,20 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
       id,
       createdByUserId: DEMO_USER_ID,
     },
+    select: { id: true },
+  });
+
+  if (!patient) {
+    notFound();
+  }
+
+  await refreshTodayScheduleStatusesForPatient(prisma, patient.id);
+
+  const patientWithSchedule = await prisma.patient.findFirst({
+    where: {
+      id: patient.id,
+      createdByUserId: DEMO_USER_ID,
+    },
     include: {
       doseEvents: {
         where: {
@@ -46,13 +61,13 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
     },
   });
 
-  if (!patient) {
+  if (!patientWithSchedule) {
     notFound();
   }
 
   const statusGroups = STATUS_ORDER.map((status) => ({
     status,
-    doseEvents: patient.doseEvents.filter((doseEvent) => doseEvent.status === status),
+    doseEvents: patientWithSchedule.doseEvents.filter((doseEvent) => doseEvent.status === status),
   })).filter((group) => group.doseEvents.length > 0);
 
   return (
@@ -60,16 +75,16 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
       <header className="page-header">
         <div>
           <h1>Today&apos;s schedule</h1>
-          <p>{patient.fullName}</p>
+          <p>{patientWithSchedule.fullName}</p>
         </div>
-        <ScheduleActions patientId={patient.id} />
+        <ScheduleActions patientId={patientWithSchedule.id} />
       </header>
 
-      {patient.doseEvents.length === 0 ? (
+      {patientWithSchedule.doseEvents.length === 0 ? (
         <section className="empty-state">
           <h2>No doses generated for today</h2>
           <p>Generate a schedule from this patient&apos;s active medicines and timings.</p>
-          <ScheduleGenerateButton patientId={patient.id} />
+          <ScheduleGenerateButton patientId={patientWithSchedule.id} />
         </section>
       ) : (
         <section className="schedule-list" aria-label="Today&apos;s dose schedule">
