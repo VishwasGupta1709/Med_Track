@@ -68,6 +68,16 @@ export default async function PatientDetailPage({ params }: PatientDetailPagePro
 
       <section className="detail-panel medicine-nav-panel">
         <div>
+          <h2>Dashboard</h2>
+          <p>Review what is due, missed, completed, skipped, and next for today.</p>
+        </div>
+        <Link className="primary-button" href={`/patients/${patient.id}/dashboard`}>
+          View dashboard
+        </Link>
+      </section>
+
+      <section className="detail-panel medicine-nav-panel">
+        <div>
           <h2>Medicines</h2>
           <p>Add and review manually entered medicines for this patient.</p>
         </div>
