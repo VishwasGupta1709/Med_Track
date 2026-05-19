@@ -61,6 +61,92 @@ describe("medicine validation", () => {
     });
   });
 
+  it("allows once daily with exactly 1 timing", () => {
+    expect(validateMedicineInput(createInput({ frequency: "Once daily" }))).toEqual({
+      isValid: true,
+      errors: {},
+    });
+  });
+
+  it("rejects 2 times daily with 1 timing", () => {
+    expect(validateMedicineInput(createInput({ frequency: "2" }))).toEqual({
+      isValid: false,
+      errors: {
+        timings: "Frequency is 2 times daily, so please add exactly 2 timings.",
+      },
+    });
+  });
+
+  it("allows 2 times daily with exactly 2 timings", () => {
+    expect(
+      validateMedicineInput(
+        createInput({
+          frequency: "2",
+          timings: [{ timeOfDay: "09:00" }, { timeOfDay: "21:00" }],
+        }),
+      ),
+    ).toEqual({
+      isValid: true,
+      errors: {},
+    });
+  });
+
+  it("rejects 3 times daily with 2 timings", () => {
+    expect(
+      validateMedicineInput(
+        createInput({
+          frequency: "3 times daily",
+          timings: [{ timeOfDay: "09:00" }, { timeOfDay: "21:00" }],
+        }),
+      ),
+    ).toEqual({
+      isValid: false,
+      errors: {
+        timings: "Frequency is 3 times daily, so please add exactly 3 timings.",
+      },
+    });
+  });
+
+  it("allows 3 times daily with exactly 3 timings", () => {
+    expect(
+      validateMedicineInput(
+        createInput({
+          frequency: "3 times daily",
+          timings: [
+            { timeOfDay: "09:00" },
+            { timeOfDay: "15:00" },
+            { timeOfDay: "21:00" },
+          ],
+        }),
+      ),
+    ).toEqual({
+      isValid: true,
+      errors: {},
+    });
+  });
+
+  it("rejects 4 times daily with 5 timings", () => {
+    expect(
+      validateMedicineInput(
+        createInput({
+          frequency: "4 times daily",
+          timings: [
+            { timeOfDay: "06:00" },
+            { timeOfDay: "10:00" },
+            { timeOfDay: "14:00" },
+            { timeOfDay: "18:00" },
+            { timeOfDay: "22:00" },
+          ],
+        }),
+      ),
+    ).toEqual({
+      isValid: false,
+      errors: {
+        timings: "Frequency is 4 times daily, so please add exactly 4 timings.",
+      },
+    });
+  });
+
   it("requires at least one timing", () => {
     expect(validateMedicineInput(createInput({ timings: [] }))).toEqual({
       isValid: false,

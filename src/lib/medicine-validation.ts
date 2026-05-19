@@ -18,8 +18,37 @@ export type MedicineInput = {
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+export function getRequiredTimingCount(frequency?: string | null) {
+  const normalizedFrequency = frequency?.trim().toLowerCase();
+
+  if (!normalizedFrequency) {
+    return null;
+  }
+
+  if (normalizedFrequency === "once daily") {
+    return 1;
+  }
+
+  if (normalizedFrequency === "twice daily") {
+    return 2;
+  }
+
+  if (/^[1-9]\d*$/.test(normalizedFrequency)) {
+    return Number(normalizedFrequency);
+  }
+
+  const timesDailyMatch = normalizedFrequency.match(/^([1-9]\d*)\s+times?\s+daily$/);
+
+  return timesDailyMatch ? Number(timesDailyMatch[1]) : null;
+}
+
+function formatFrequencyTimingCount(count: number) {
+  return count === 1 ? "once daily" : `${count} times daily`;
+}
+
 export function validateMedicineInput(input: MedicineInput) {
   const errors: Record<string, string> = {};
+  const requiredTimingCount = getRequiredTimingCount(input.frequency);
 
   if (!input.name.trim()) {
     errors.name = "Medicine name is required.";
@@ -42,6 +71,8 @@ export function validateMedicineInput(input: MedicineInput) {
 
   if (input.timings.length === 0) {
     errors.timings = "At least one timing is required.";
+  } else if (requiredTimingCount && input.timings.length !== requiredTimingCount) {
+    errors.timings = `Frequency is ${formatFrequencyTimingCount(requiredTimingCount)}, so please add exactly ${requiredTimingCount} timing${requiredTimingCount === 1 ? "" : "s"}.`;
   }
 
   if (input.timings.some((timing) => !TIME_PATTERN.test(timing.timeOfDay))) {

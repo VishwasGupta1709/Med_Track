@@ -175,6 +175,24 @@ describe("edit medicine route", () => {
     expect(prismaMocks.transaction).not.toHaveBeenCalled();
   });
 
+  it("returns 400 when frequency and timing count do not match", async () => {
+    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
+    prismaMocks.medicineFindFirst.mockResolvedValueOnce({ id: "medicine-1" });
+
+    const response = await PATCH(
+      createRequest(createPayload({ frequency: "2", timings: [{ timeOfDay: "09:00" }] })),
+      createContext(),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      errors: {
+        timings: "Frequency is 2 times daily, so please add exactly 2 timings.",
+      },
+    });
+    expect(prismaMocks.transaction).not.toHaveBeenCalled();
+  });
+
   it("updates scalar medicine fields without changing status", async () => {
     mockSuccessfulEdit();
 
@@ -222,6 +240,7 @@ describe("edit medicine route", () => {
     await PATCH(
       createRequest(
         createPayload({
+          frequency: "2",
           timings: [
             { id: "timing-1", label: "Morning", timeOfDay: "09:00" },
             { label: "Night", timeOfDay: "21:00" },
