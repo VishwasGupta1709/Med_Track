@@ -1,6 +1,8 @@
+import Link from "next/link";
 import type { BPReading } from "@prisma/client";
 
 type BPReadingCardProps = {
+  patientId: string;
   bpReading: BPReading;
 };
 
@@ -11,7 +13,7 @@ function formatDateTime(date: Date) {
   });
 }
 
-export function BPReadingCard({ bpReading }: BPReadingCardProps) {
+export function BPReadingCard({ patientId, bpReading }: BPReadingCardProps) {
   return (
     <article className="bp-reading-card">
       <div className="medicine-card-header">
@@ -41,6 +43,15 @@ export function BPReadingCard({ bpReading }: BPReadingCardProps) {
       </dl>
 
       {bpReading.notes ? <p className="medicine-instructions">{bpReading.notes}</p> : null}
+
+      <div className="schedule-action-item">
+        <Link
+          className="secondary-button"
+          href={`/patients/${patientId}/bp-readings/${bpReading.id}/edit`}
+        >
+          Edit reading
+        </Link>
+      </div>
     </article>
   );
 }

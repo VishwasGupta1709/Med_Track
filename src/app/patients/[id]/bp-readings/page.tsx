@@ -64,7 +64,7 @@ export default async function PatientBPReadingsPage({ params }: PatientBPReading
       ) : (
         <section className="medicine-list" aria-label="BP reading history">
           {patient.bpReadings.map((bpReading) => (
-            <BPReadingCard bpReading={bpReading} key={bpReading.id} />
+            <BPReadingCard bpReading={bpReading} key={bpReading.id} patientId={patient.id} />
           ))}
         </section>
       )}

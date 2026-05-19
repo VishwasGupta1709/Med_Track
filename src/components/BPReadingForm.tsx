@@ -9,7 +9,23 @@ type FormErrors = Partial<
 
 type BPReadingFormProps = {
   patientId: string;
-};
+} & (
+  | {
+      mode?: "create";
+      reading?: never;
+    }
+  | {
+      mode: "edit";
+      reading: {
+        id: string;
+        systolic: number;
+        diastolic: number;
+        pulse?: number | null;
+        measuredAt: string;
+        notes?: string | null;
+      };
+    }
+);
 
 function getDefaultMeasuredAt() {
   const now = new Date();
@@ -17,11 +33,14 @@ function getDefaultMeasuredAt() {
   return now.toISOString().slice(0, 16);
 }
 
-export function BPReadingForm({ patientId }: BPReadingFormProps) {
+export function BPReadingForm(props: BPReadingFormProps) {
+  const { patientId } = props;
+  const isEditMode = props.mode === "edit";
+  const reading = isEditMode ? props.reading : undefined;
   const router = useRouter();
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [measuredAt, setMeasuredAt] = useState(getDefaultMeasuredAt);
+  const [measuredAt, setMeasuredAt] = useState(reading?.measuredAt || getDefaultMeasuredAt);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,15 +57,25 @@ export function BPReadingForm({ patientId }: BPReadingFormProps) {
     };
 
     try {
-      const response = await fetch(`/api/patients/${patientId}/bp-readings`, {
-        method: "POST",
+      const requestUrl =
+        props.mode === "edit"
+          ? `/api/patients/${patientId}/bp-readings/${props.reading.id}`
+          : `/api/patients/${patientId}/bp-readings`;
+      const requestMethod = props.mode === "edit" ? "PATCH" : "POST";
+
+      const response = await fetch(requestUrl, {
+        method: requestMethod,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { errors?: FormErrors } | null;
-        setErrors(body?.errors || { form: "Unable to create BP reading." });
+        setErrors(
+          body?.errors || {
+            form: isEditMode ? "Unable to update BP reading." : "Unable to create BP reading.",
+          },
+        );
         return;
       }
 
@@ -76,6 +105,7 @@ export function BPReadingForm({ patientId }: BPReadingFormProps) {
             step="1"
             inputMode="numeric"
             aria-describedby="systolic-error"
+            defaultValue={reading?.systolic ?? ""}
           />
           {errors.systolic ? (
             <span className="field-error" id="systolic-error">
@@ -93,6 +123,7 @@ export function BPReadingForm({ patientId }: BPReadingFormProps) {
             step="1"
             inputMode="numeric"
             aria-describedby="diastolic-error"
+            defaultValue={reading?.diastolic ?? ""}
           />
           {errors.diastolic ? (
             <span className="field-error" id="diastolic-error">
@@ -112,6 +143,7 @@ export function BPReadingForm({ patientId }: BPReadingFormProps) {
             step="1"
             inputMode="numeric"
             aria-describedby="pulse-error"
+            defaultValue={reading?.pulse ?? ""}
           />
           {errors.pulse ? (
             <span className="field-error" id="pulse-error">
@@ -139,11 +171,16 @@ export function BPReadingForm({ patientId }: BPReadingFormProps) {
 
       <label>
         Notes
-        <textarea name="notes" rows={4} placeholder="Optional care notes for this reading" />
+        <textarea
+          name="notes"
+          rows={4}
+          placeholder="Optional care notes for this reading"
+          defaultValue={reading?.notes || ""}
+        />
       </label>
 
       <button className="primary-button" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Saving..." : "Add BP reading"}
+        {isSubmitting ? "Saving..." : isEditMode ? "Save BP reading" : "Add BP reading"}
       </button>
     </form>
   );

@@ -63,6 +63,7 @@
 - Valid reading without pulse or notes saves and appears in history
 - Valid reading with pulse and notes saves and displays those optional fields
 - BP history is newest-first
+- BP reading correction opens from Edit reading, pre-fills values, saves changes, and allows optional pulse/notes to be cleared
 - No diagnostic BP wording or value classification appears
 
 ## Completed UI Improvements
