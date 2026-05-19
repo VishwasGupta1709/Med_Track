@@ -9,13 +9,40 @@ type FormErrors = Partial<
 
 type TimingRow = {
   id: number;
+  persistedId?: string;
   label: string;
   timeOfDay: string;
 };
 
+type MedicineFormInitialValue = {
+  id: string;
+  name: string;
+  dosage?: string | null;
+  form?: string | null;
+  frequency?: string | null;
+  foodInstruction?: string | null;
+  instructions?: string | null;
+  startDate: string;
+  endDate?: string | null;
+  timings: {
+    id: string;
+    label?: string | null;
+    timeOfDay: string;
+  }[];
+};
+
 type MedicineFormProps = {
   patientId: string;
-};
+} & (
+  | {
+      mode?: "create";
+      medicine?: never;
+    }
+  | {
+      mode: "edit";
+      medicine: MedicineFormInitialValue;
+    }
+);
 
 const emptyTiming = (id: number): TimingRow => ({
   id,
@@ -23,12 +50,33 @@ const emptyTiming = (id: number): TimingRow => ({
   timeOfDay: "",
 });
 
-export function MedicineForm({ patientId }: MedicineFormProps) {
+function createInitialTimings(medicine?: MedicineFormInitialValue) {
+  if (!medicine) {
+    return [emptyTiming(1)];
+  }
+
+  if (medicine.timings.length === 0) {
+    return [emptyTiming(1)];
+  }
+
+  return medicine.timings.map((timing, index) => ({
+    id: index + 1,
+    persistedId: timing.id,
+    label: timing.label || "",
+    timeOfDay: timing.timeOfDay,
+  }));
+}
+
+export function MedicineForm(props: MedicineFormProps) {
+  const { patientId } = props;
   const router = useRouter();
+  const isEditMode = props.mode === "edit";
+  const medicine = isEditMode ? props.medicine : undefined;
+  const initialTimings = createInitialTimings(medicine);
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [timings, setTimings] = useState<TimingRow[]>([emptyTiming(1)]);
-  const [nextTimingId, setNextTimingId] = useState(2);
+  const [timings, setTimings] = useState<TimingRow[]>(initialTimings);
+  const [nextTimingId, setNextTimingId] = useState(initialTimings.length + 1);
 
   function updateTiming(id: number, field: "label" | "timeOfDay", value: string) {
     setTimings((current) =>
@@ -61,6 +109,7 @@ export function MedicineForm({ patientId }: MedicineFormProps) {
       startDate: String(formData.get("startDate") || ""),
       endDate: String(formData.get("endDate") || ""),
       timings: timings.map((timing) => ({
+        id: timing.persistedId,
         label: timing.label,
         timeOfDay: timing.timeOfDay,
       })),
@@ -86,15 +135,35 @@ export function MedicineForm({ patientId }: MedicineFormProps) {
       return;
     }
 
-    const response = await fetch(`/api/patients/${patientId}/medicines`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const requestUrl =
+        props.mode === "edit"
+          ? `/api/patients/${patientId}/medicines/${props.medicine.id}`
+          : `/api/patients/${patientId}/medicines`;
+      const requestMethod = props.mode === "edit" ? "PATCH" : "POST";
 
-    if (!response.ok) {
-      const body = (await response.json().catch(() => null)) as { errors?: FormErrors } | null;
-      setErrors(body?.errors || { form: "Unable to create medicine." });
+      const response = await fetch(requestUrl, {
+        method: requestMethod,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as
+          | { error?: string; errors?: FormErrors }
+          | null;
+        setErrors(
+          body?.errors || {
+            form:
+              body?.error ||
+              (isEditMode ? "Unable to update medicine." : "Unable to create medicine."),
+          },
+        );
+        setIsSubmitting(false);
+        return;
+      }
+    } catch {
+      setErrors({ form: "Network error. Please try again." });
       setIsSubmitting(false);
       return;
     }
@@ -109,7 +178,13 @@ export function MedicineForm({ patientId }: MedicineFormProps) {
 
       <label>
         Medicine name
-        <input name="name" type="text" autoComplete="off" aria-describedby="name-error" />
+        <input
+          name="name"
+          type="text"
+          autoComplete="off"
+          aria-describedby="name-error"
+          defaultValue={medicine?.name || ""}
+        />
         {errors.name ? (
           <span className="field-error" id="name-error">
             {errors.name}
@@ -119,28 +194,48 @@ export function MedicineForm({ patientId }: MedicineFormProps) {
 
       <label>
         Dosage
-        <input name="dosage" type="text" placeholder="500 mg" />
+        <input name="dosage" type="text" placeholder="500 mg" defaultValue={medicine?.dosage || ""} />
       </label>
 
       <label>
         Form
-        <input name="form" type="text" placeholder="Tablet, syrup, capsule" />
+        <input
+          name="form"
+          type="text"
+          placeholder="Tablet, syrup, capsule"
+          defaultValue={medicine?.form || ""}
+        />
       </label>
 
       <label>
         Frequency
-        <input name="frequency" type="text" placeholder="Once daily, twice daily" />
+        <input
+          name="frequency"
+          type="text"
+          placeholder="Once daily, twice daily"
+          defaultValue={medicine?.frequency || ""}
+        />
       </label>
 
       <label>
         Food instruction
-        <input name="foodInstruction" type="text" placeholder="Before food, after food" />
+        <input
+          name="foodInstruction"
+          type="text"
+          placeholder="Before food, after food"
+          defaultValue={medicine?.foodInstruction || ""}
+        />
       </label>
 
       <div className="form-row">
         <label>
           Start date
-          <input name="startDate" type="date" aria-describedby="startDate-error" />
+          <input
+            name="startDate"
+            type="date"
+            aria-describedby="startDate-error"
+            defaultValue={medicine?.startDate || ""}
+          />
           {errors.startDate ? (
             <span className="field-error" id="startDate-error">
               {errors.startDate}
@@ -150,7 +245,12 @@ export function MedicineForm({ patientId }: MedicineFormProps) {
 
         <label>
           End date
-          <input name="endDate" type="date" aria-describedby="endDate-error" />
+          <input
+            name="endDate"
+            type="date"
+            aria-describedby="endDate-error"
+            defaultValue={medicine?.endDate || ""}
+          />
           {errors.endDate ? (
             <span className="field-error" id="endDate-error">
               {errors.endDate}
@@ -181,7 +281,7 @@ export function MedicineForm({ patientId }: MedicineFormProps) {
                 aria-describedby="timings-error"
               />
             </label>
-            {timings.length > 1 ? (
+            {timings.length > 1 && (!isEditMode || !timing.persistedId) ? (
               <button
                 className="secondary-button timing-remove"
                 type="button"
@@ -208,11 +308,16 @@ export function MedicineForm({ patientId }: MedicineFormProps) {
 
       <label>
         Instructions
-        <textarea name="instructions" rows={4} placeholder="Care notes for this medicine" />
+        <textarea
+          name="instructions"
+          rows={4}
+          placeholder="Care notes for this medicine"
+          defaultValue={medicine?.instructions || ""}
+        />
       </label>
 
       <button className="primary-button" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Saving..." : "Add medicine"}
+        {isSubmitting ? "Saving..." : isEditMode ? "Save changes" : "Add medicine"}
       </button>
     </form>
   );

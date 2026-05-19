@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Medicine, MedicineTiming } from "@prisma/client";
 import { MedicineStopAction } from "@/components/MedicineStopAction";
 
@@ -75,6 +76,15 @@ export function MedicineCard({ patientId, medicine }: MedicineCardProps) {
       </div>
 
       {medicine.instructions ? <p className="medicine-instructions">{medicine.instructions}</p> : null}
+
+      <div className="schedule-action-item">
+        <Link
+          className="secondary-button"
+          href={`/patients/${patientId}/medicines/${medicine.id}/edit`}
+        >
+          Edit medicine
+        </Link>
+      </div>
 
       <MedicineStopAction
         patientId={patientId}
