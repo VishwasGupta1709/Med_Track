@@ -51,10 +51,15 @@ export default async function PatientBPReadingsPage({ params }: PatientBPReading
       {patient.bpReadings.length === 0 ? (
         <section className="empty-state">
           <h2>No BP readings yet</h2>
-          <p>Add the first BP reading for this patient.</p>
-          <Link className="primary-button" href={`/patients/${patient.id}/bp-readings/new`}>
-            Add BP reading
-          </Link>
+          <p>Record BP readings manually to keep a history for this patient.</p>
+          <div className="empty-state-actions">
+            <Link className="primary-button" href={`/patients/${patient.id}/bp-readings/new`}>
+              Add BP reading
+            </Link>
+            <Link className="secondary-button" href={`/patients/${patient.id}`}>
+              Back to patient
+            </Link>
+          </div>
         </section>
       ) : (
         <section className="medicine-list" aria-label="BP reading history">

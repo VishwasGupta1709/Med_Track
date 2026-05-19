@@ -31,9 +31,14 @@ export default async function NewBPReadingPage({ params }: NewBPReadingPageProps
           <h1>New BP reading</h1>
           <p>{patient.fullName}</p>
         </div>
-        <Link className="secondary-button" href={`/patients/${patient.id}/bp-readings`}>
-          Back to BP readings
-        </Link>
+        <div className="header-actions">
+          <Link className="secondary-button" href={`/patients/${patient.id}/bp-readings`}>
+            Back to BP readings
+          </Link>
+          <Link className="secondary-button" href={`/patients/${patient.id}`}>
+            Back to patient
+          </Link>
+        </div>
       </header>
 
       <section className="form-panel">

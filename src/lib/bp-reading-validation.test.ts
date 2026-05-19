@@ -79,18 +79,28 @@ describe("BP reading validation", () => {
     });
   });
 
-  it("currently allows very large positive integer values", () => {
-    expect(
-      validateBPReadingInput(
-        createInput({
-          systolic: 1000000,
-          diastolic: 1000000,
-          pulse: 1000000,
-        }),
-      ),
-    ).toEqual({
+  it("allows broad boundary values", () => {
+    expect(validateBPReadingInput(createInput({ systolic: 300, diastolic: 200, pulse: 250 }))).toEqual({
       isValid: true,
       errors: {},
+    });
+  });
+
+  it("rejects systolic values above 300", () => {
+    expect(validateBPReadingInput(createInput({ systolic: 301 })).errors).toEqual({
+      systolic: "Systolic reading must be between 1 and 300.",
+    });
+  });
+
+  it("rejects diastolic values above 200", () => {
+    expect(validateBPReadingInput(createInput({ diastolic: 201 })).errors).toEqual({
+      diastolic: "Diastolic reading must be between 1 and 200.",
+    });
+  });
+
+  it("rejects pulse values above 250", () => {
+    expect(validateBPReadingInput(createInput({ pulse: 251 })).errors).toEqual({
+      pulse: "Pulse must be between 1 and 250.",
     });
   });
 

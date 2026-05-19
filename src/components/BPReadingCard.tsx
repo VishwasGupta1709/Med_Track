@@ -19,7 +19,7 @@ export function BPReadingCard({ bpReading }: BPReadingCardProps) {
           <h2>
             {bpReading.systolic}/{bpReading.diastolic} mmHg
           </h2>
-          <p>{formatDateTime(bpReading.measuredAt)}</p>
+          <p>Measured {formatDateTime(bpReading.measuredAt)}</p>
         </div>
       </div>
 

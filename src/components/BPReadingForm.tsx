@@ -62,10 +62,13 @@ export function BPReadingForm({ patientId }: BPReadingFormProps) {
   return (
     <form className="patient-form" noValidate onSubmit={handleSubmit}>
       {errors.form ? <p className="form-error">{errors.form}</p> : null}
+      <p className="helper-note">
+        Enter values exactly as measured. MedTrack stores readings without interpreting them.
+      </p>
 
       <div className="form-row">
         <label>
-          Systolic
+          Systolic (mmHg)
           <input
             name="systolic"
             type="number"
@@ -82,7 +85,7 @@ export function BPReadingForm({ patientId }: BPReadingFormProps) {
         </label>
 
         <label>
-          Diastolic
+          Diastolic (mmHg)
           <input
             name="diastolic"
             type="number"
@@ -101,7 +104,7 @@ export function BPReadingForm({ patientId }: BPReadingFormProps) {
 
       <div className="form-row">
         <label>
-          Pulse
+          Pulse (bpm, optional)
           <input
             name="pulse"
             type="number"

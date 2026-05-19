@@ -55,6 +55,16 @@
 - Stopped medicine history explanation appears on dashboard and schedule pages
 - Empty-state and compact-dashboard action buttons wrap cleanly on mobile viewport
 
+## BP Tracking Manual Test
+
+- No BP readings empty state explains manual history and shows Add BP reading plus Back to patient
+- BP form labels include mmHg/bpm units and neutral helper copy
+- Blank, invalid, and very large values show validation errors
+- Valid reading without pulse or notes saves and appears in history
+- Valid reading with pulse and notes saves and displays those optional fields
+- BP history is newest-first
+- No diagnostic BP wording or value classification appears
+
 ## Completed UI Improvements
 
 - Medicine frequency display now shows numeric values like "1" and "2" as caregiver-friendly text such as "Once daily" and "2 times daily"
