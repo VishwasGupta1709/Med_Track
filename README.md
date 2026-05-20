@@ -1,27 +1,49 @@
 # MedTrack
 
-MedTrack is a medicine tracking and family health reminder app. It helps a caregiver manage patient profiles, medicines, dose schedules, confirmations, missed doses, and a simple dashboard for today's status.
+MedTrack is a medicine tracking and family health reminder app for patients and caregivers. It helps families record patient profiles, manually entered medicines, dose schedules, confirmations, missed doses, BP readings, follow-up appointments, and patient-level dashboard status.
 
-MedTrack is for reminders and family coordination only. It must not recommend medicines, change doses, or make medical decisions. Future OCR or AI-assisted flows must require human confirmation before any medicine schedule is activated.
+MedTrack is for recording, reminders, tracking, and family coordination only. It must not recommend medicines, change dosages, diagnose, classify readings, recommend treatment, recommend doctors, or make medical decisions. OCR and AI are future scope only and must never activate reminders without human review and confirmation.
 
 ## Current Stack
 
-- Next.js
+- Next.js App Router
+- Next.js API routes
 - React
-- Prisma
+- Prisma ORM
 - PostgreSQL
 - Docker Compose for local PostgreSQL
+- Vitest
 - npm for scripts and dependencies
 
-## Completed Milestones
+Current MVP ownership uses `createdByUserId = "demo-user"` as a placeholder until real authentication and family roles are added.
 
-- Patient profile vertical slice
-- Manual medicine entry with medicine timings
-- DoseEvent schedule generation
-- Today's schedule page
-- Dose confirmation with `TAKEN` and `SKIPPED`
-- Missed dose tracking with `MISSED`
-- Read-only Dashboard MVP at `/`
+## Current MVP Features
+
+- Patient profile create, list, and detail flows.
+- Manual medicine entry with medicine timings.
+- Medicine list and edit flows.
+- Medicine frequency/timing validation, including matching timing count for frequencies such as once daily, twice daily, `2`, `3`, and `4`.
+- Medicine stop flow with history-safe cleanup: only future `PENDING` dose events after the stop time are removed.
+- Dose schedule generation.
+- Today's schedule page.
+- Dose confirmation and skip actions.
+- Due and missed dose processing.
+- Automatic today status refresh on schedule and patient dashboard page load.
+- Patient dashboard at `/patients/[id]/dashboard`.
+- BP reading list, create, and edit correction flows.
+- BP validation for systolic, diastolic, optional pulse, and measured time.
+- Follow-up appointment list and create flows.
+- Follow-up validation and UX polish.
+
+## Current Limitations
+
+- No real authentication or family role model yet.
+- No production notification delivery yet.
+- No BP reminder or follow-up reminder delivery yet.
+- No calendar integration.
+- No OCR or AI prescription upload yet.
+- No medical interpretation, diagnosis, classification, treatment guidance, dosage recommendation, or doctor recommendation.
+- Local database data does not sync between machines.
 
 ## First-Time Setup
 
@@ -77,7 +99,7 @@ The patient list is at:
 http://localhost:3000/patients
 ```
 
-## Daily Startup
+## Daily Development Workflow
 
 When starting work on a laptop:
 
@@ -90,7 +112,16 @@ npm run dev
 
 Use `npx prisma migrate dev` after pulling so your local database structure catches up with committed migrations.
 
-## Useful Commands
+The project also includes helper scripts:
+
+```powershell
+npm run dev:start
+npm run dev:stop
+```
+
+`dev:start` checks Docker, starts the local PostgreSQL container when needed, generates Prisma client files, checks migration status, and starts Next.js. `dev:stop` stops local dev processes and the PostgreSQL container without deleting database volumes.
+
+## Verification Commands
 
 Run lint:
 
@@ -103,6 +134,14 @@ Run production build:
 ```powershell
 npm run build
 ```
+
+Run tests:
+
+```powershell
+npm test
+```
+
+## Useful Commands
 
 Open Prisma Studio:
 
@@ -127,6 +166,14 @@ Apply migrations manually:
 ```powershell
 npx prisma migrate dev
 ```
+
+## Project Docs
+
+- `docs/mvp-status.md`: current completed features, limitations, and next milestones.
+- `docs/ARCHITECTURE.md`: high-level app architecture and safety boundaries.
+- `docs/data-model.md`: Prisma model and relationship summary.
+- `docs/manual-testing.md`: manual MVP regression checklist.
+- `docs/PRD.md`: compact product requirements snapshot.
 
 ## Troubleshooting
 
@@ -258,5 +305,5 @@ Notes:
 - Always `git pull` before starting work.
 - Always `git push` before switching laptops.
 - Local database data does not sync between laptops.
-- Prisma migrations sync database structure, not the actual patient/medicine/dose data.
+- Prisma migrations sync database structure, not the actual patient, medicine, dose, BP, or follow-up data.
 - If one laptop has test data that the other does not, that is expected.
