@@ -9,13 +9,14 @@ MedTrack is for recording, reminders, tracking, and family coordination only. It
 - Next.js App Router
 - Next.js API routes
 - React
+- Clerk authentication
 - Prisma ORM
 - PostgreSQL
 - Docker Compose for local PostgreSQL
 - Vitest
 - npm for scripts and dependencies
 
-Current MVP ownership uses `createdByUserId = "demo-user"` as a placeholder until real authentication and family roles are added.
+Authentication is provided by Clerk. MedTrack authorization is being introduced in local Prisma tables with `User` and `PatientMember`. During the auth foundation transition, many MVP routes still use `createdByUserId = "demo-user"` as a legacy placeholder until the route-by-route authorization rollout is completed.
 
 ## Current MVP Features
 
@@ -37,7 +38,7 @@ Current MVP ownership uses `createdByUserId = "demo-user"` as a placeholder unti
 
 ## Current Limitations
 
-- No real authentication or family role model yet.
+- Auth foundation exists, but full patient-member authorization is not enforced across every route yet.
 - No production notification delivery yet.
 - No BP reminder or follow-up reminder delivery yet.
 - No calendar integration.
@@ -62,6 +63,17 @@ Run these from the project root.
    ```
 
    Do not commit `.env`. It is local machine configuration.
+
+   Add local Clerk development keys to `.env`:
+
+   ```text
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=""
+   CLERK_SECRET_KEY=""
+   NEXT_PUBLIC_CLERK_SIGN_IN_URL="/sign-in"
+   NEXT_PUBLIC_CLERK_SIGN_UP_URL="/sign-up"
+   NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL="/"
+   NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL="/"
+   ```
 
 3. Start PostgreSQL:
 
@@ -142,6 +154,22 @@ npm test
 ```
 
 ## Useful Commands
+
+Claim local demo patient data for a Clerk user during development:
+
+```powershell
+$env:CLERK_USER_ID="user_xxx"
+npm run claim:demo-data
+```
+
+Optional local metadata:
+
+```powershell
+$env:CLERK_USER_EMAIL="caregiver@example.com"
+$env:CLERK_USER_DISPLAY_NAME="Caregiver Name"
+```
+
+This creates local `PatientMember` rows for patients with `createdByUserId = "demo-user"`. It does not change patient medical data or print patient details.
 
 Open Prisma Studio:
 

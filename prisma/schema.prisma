@@ -21,8 +21,43 @@ model Patient {
   doseEvents      DoseEvent[]
   bpReadings      BPReading[]
   followUps       FollowUp[]
+  members         PatientMember[]
 
   @@index([createdByUserId])
+}
+
+model User {
+  id          String          @id @default(cuid())
+  clerkUserId String          @unique
+  email       String?
+  displayName String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  memberships PatientMember[]
+
+  @@index([email])
+}
+
+enum PatientRole {
+  PRIMARY_CAREGIVER
+  CAREGIVER
+  VIEWER
+}
+
+model PatientMember {
+  id        String      @id @default(cuid())
+  patientId String
+  userId    String
+  role      PatientRole
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, userId])
+  @@index([userId])
+  @@index([patientId])
 }
 
 model BPReading {

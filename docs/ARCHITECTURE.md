@@ -29,7 +29,11 @@ Route-level documentation should stay high-level here. The route files remain th
 
 ## Ownership Model
 
-The current MVP uses `createdByUserId = "demo-user"` as a placeholder ownership boundary. Patient-scoped API routes and pages should continue checking this until real authentication and family roles are implemented.
+Clerk is the authentication provider and answers who is signed in. MedTrack keeps authorization in local Prisma tables so the database can answer which patient a user can access and what role they have for that patient.
+
+The auth foundation includes local `User`, `PatientRole`, and `PatientMember` records. `PatientMember` is the patient-scoped access table and is the intended authorization boundary for future route work.
+
+During the transition, `Patient.createdByUserId` remains a `String` and many MVP routes still check `createdByUserId = "demo-user"`. This is intentional for the foundation milestone only. Middleware provides signed-in protection for patient-related routes, but full route-by-route `PatientMember` authorization is still a follow-up milestone and must be enforced in server-rendered pages and API route handlers, not only in the UI or middleware.
 
 ## Validation And Business Helpers
 

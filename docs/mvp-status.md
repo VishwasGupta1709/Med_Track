@@ -52,7 +52,7 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 
 ## Not Implemented Yet
 
-- Real authentication and family role permissions.
+- Full route-by-route patient-member authorization and family role permissions.
 - Production notification delivery.
 - Calendar integration.
 - BP reminder delivery.
@@ -66,7 +66,9 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 
 ## Current Limitations
 
-- `createdByUserId = "demo-user"` is a placeholder ownership model.
+- Clerk auth foundation exists, with local `User` and `PatientMember` tables.
+- `createdByUserId = "demo-user"` is still used by many MVP routes as a transition placeholder.
+- Patient-related routes have signed-in middleware protection, but full API/page authorization must still be rolled out route by route.
 - The app is currently a local development MVP.
 - Local data is stored in local PostgreSQL and does not sync between machines.
 - There is no production deployment, production auth, or production notification service.
@@ -75,7 +77,7 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 ## Recommended Next Milestones
 
 - Plan follow-up delete or complete/cancelled status only after correction workflows are stable.
-- Plan real auth and family access roles.
+- Roll out `PatientMember` authorization checks across patient pages and API routes.
 - Design reminder notification delivery with explicit caregiver-controlled setup.
 - Plan BP charts and reports after the manual tracking workflow stays stable.
 - Consider OCR only after manual medicine workflow, review, and confirmation flows are stable.

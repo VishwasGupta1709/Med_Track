@@ -12,6 +12,39 @@ Relationships:
 - One patient has many dose events.
 - One patient has many BP readings.
 - One patient has many follow-up appointments.
+- One patient can have many patient members.
+
+`createdByUserId` remains a plain string during the auth foundation transition. Future authorization rollout work should move route checks to `PatientMember`.
+
+## User
+
+`User` stores the local MedTrack representation of a signed-in Clerk user.
+
+Important behavior:
+
+- `clerkUserId` is unique and links the local user row to Clerk.
+- Email and display name are copied from Clerk when a signed-in user is upserted locally.
+- A user can have many patient memberships.
+
+## PatientRole
+
+`PatientRole` defines patient-scoped access roles:
+
+- `PRIMARY_CAREGIVER`
+- `CAREGIVER`
+- `VIEWER`
+
+The full permission matrix is future work.
+
+## PatientMember
+
+`PatientMember` links a local user to a patient with a patient-scoped role.
+
+Important behavior:
+
+- A patient/user pair is unique.
+- Deleting a patient or user cascades to related memberships.
+- Route-by-route enforcement is not complete yet; this model is the foundation for that rollout.
 
 ## Medicine
 
