@@ -1,6 +1,8 @@
+import Link from "next/link";
 import type { FollowUp } from "@prisma/client";
 
 type FollowUpCardProps = {
+  patientId: string;
   followUp: FollowUp;
 };
 
@@ -11,7 +13,7 @@ function formatDateTime(value: Date | string) {
   });
 }
 
-export function FollowUpCard({ followUp }: FollowUpCardProps) {
+export function FollowUpCard({ patientId, followUp }: FollowUpCardProps) {
   return (
     <article className="medicine-card">
       <div className="medicine-card-header">
@@ -43,6 +45,15 @@ export function FollowUpCard({ followUp }: FollowUpCardProps) {
       </dl>
 
       {followUp.notes ? <p className="medicine-instructions">{followUp.notes}</p> : null}
+
+      <div className="schedule-action-item">
+        <Link
+          className="secondary-button"
+          href={`/patients/${patientId}/follow-ups/${followUp.id}/edit`}
+        >
+          Edit follow-up
+        </Link>
+      </div>
     </article>
   );
 }

@@ -9,11 +9,30 @@ type FormErrors = Partial<
 
 type FollowUpFormProps = {
   patientId: string;
-};
+} & (
+  | {
+      mode?: "create";
+      followUp?: never;
+    }
+  | {
+      mode: "edit";
+      followUp: {
+        id: string;
+        appointmentAt: string;
+        doctorName?: string | null;
+        hospitalName?: string | null;
+        reason?: string | null;
+        notes?: string | null;
+      };
+    }
+);
 
-export function FollowUpForm({ patientId }: FollowUpFormProps) {
+export function FollowUpForm(props: FollowUpFormProps) {
+  const { patientId } = props;
+  const isEditMode = props.mode === "edit";
+  const followUp = isEditMode ? props.followUp : undefined;
   const router = useRouter();
-  const [appointmentAt, setAppointmentAt] = useState("");
+  const [appointmentAt, setAppointmentAt] = useState(followUp?.appointmentAt || "");
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,15 +57,24 @@ export function FollowUpForm({ patientId }: FollowUpFormProps) {
     };
 
     try {
-      const response = await fetch(`/api/patients/${patientId}/follow-ups`, {
-        method: "POST",
+      const requestUrl = props.mode === "edit"
+        ? `/api/patients/${patientId}/follow-ups/${props.followUp.id}`
+        : `/api/patients/${patientId}/follow-ups`;
+      const requestMethod = props.mode === "edit" ? "PATCH" : "POST";
+
+      const response = await fetch(requestUrl, {
+        method: requestMethod,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as { errors?: FormErrors } | null;
-        setErrors(body?.errors || { form: "Unable to create follow-up." });
+        setErrors(
+          body?.errors || {
+            form: isEditMode ? "Unable to update follow-up." : "Unable to create follow-up.",
+          },
+        );
         return;
       }
 
@@ -88,7 +116,12 @@ export function FollowUpForm({ patientId }: FollowUpFormProps) {
       <div className="form-row">
         <label>
           Doctor name
-          <input name="doctorName" type="text" aria-describedby="doctorName-error" />
+          <input
+            name="doctorName"
+            type="text"
+            aria-describedby="doctorName-error"
+            defaultValue={followUp?.doctorName || ""}
+          />
           {errors.doctorName ? (
             <span className="field-error" id="doctorName-error">
               {errors.doctorName}
@@ -98,7 +131,12 @@ export function FollowUpForm({ patientId }: FollowUpFormProps) {
 
         <label>
           Hospital name
-          <input name="hospitalName" type="text" aria-describedby="hospitalName-error" />
+          <input
+            name="hospitalName"
+            type="text"
+            aria-describedby="hospitalName-error"
+            defaultValue={followUp?.hospitalName || ""}
+          />
           {errors.hospitalName ? (
             <span className="field-error" id="hospitalName-error">
               {errors.hospitalName}
@@ -109,7 +147,12 @@ export function FollowUpForm({ patientId }: FollowUpFormProps) {
 
       <label>
         Reason
-        <input name="reason" type="text" aria-describedby="reason-error" />
+        <input
+          name="reason"
+          type="text"
+          aria-describedby="reason-error"
+          defaultValue={followUp?.reason || ""}
+        />
         {errors.reason ? (
           <span className="field-error" id="reason-error">
             {errors.reason}
@@ -119,7 +162,12 @@ export function FollowUpForm({ patientId }: FollowUpFormProps) {
 
       <label>
         Notes
-        <textarea name="notes" rows={4} placeholder="Optional notes for this follow-up" />
+        <textarea
+          name="notes"
+          rows={4}
+          placeholder="Optional notes for this follow-up"
+          defaultValue={followUp?.notes || ""}
+        />
         {errors.notes ? (
           <span className="field-error" id="notes-error">
             {errors.notes}
@@ -130,7 +178,7 @@ export function FollowUpForm({ patientId }: FollowUpFormProps) {
       {errors.status ? <p className="form-error">{errors.status}</p> : null}
 
       <button className="primary-button" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Saving..." : "Add follow-up"}
+        {isSubmitting ? "Saving..." : isEditMode ? "Save follow-up" : "Add follow-up"}
       </button>
     </form>
   );

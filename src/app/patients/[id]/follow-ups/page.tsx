@@ -100,7 +100,7 @@ export default async function PatientFollowUpsPage({ params }: PatientFollowUpsP
       ) : (
         <section className="medicine-list" aria-label="Follow-up appointments">
           {followUps.map((followUp) => (
-            <FollowUpCard followUp={followUp} key={followUp.id} />
+            <FollowUpCard followUp={followUp} key={followUp.id} patientId={patient.id} />
           ))}
         </section>
       )}

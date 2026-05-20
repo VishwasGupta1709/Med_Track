@@ -41,8 +41,9 @@ This document summarizes the current MedTrack MVP implementation. It separates w
 ### Follow-Up Tracking
 
 - Follow-up appointments can be created and listed.
+- Follow-up appointments can be edited for correction.
 - Validation checks appointment date/time and supported status.
-- Follow-up API route tests cover ownership, validation, creation, optional field normalization, and list ordering.
+- Follow-up API route tests cover ownership, validation, creation, edit correction, optional field normalization, and list ordering.
 - Follow-up UI is polished with neutral helper copy and navigation.
 - No reminder delivery, notification delivery, or calendar integration exists yet.
 
@@ -55,7 +56,7 @@ This document summarizes the current MedTrack MVP implementation. It separates w
 - Follow-up reminder delivery.
 - BP charts.
 - BP delete or mark-incorrect flow.
-- Follow-up edit, delete, complete, or correction flow.
+- Follow-up delete, complete, or cancelled status flow.
 - OCR or AI prescription upload.
 - Reports or PDF export.
 - WhatsApp, SMS, or email delivery.
@@ -70,7 +71,7 @@ This document summarizes the current MedTrack MVP implementation. It separates w
 
 ## Recommended Next Milestones
 
-- Add follow-up edit correction so caregivers can fix appointment details.
+- Plan follow-up delete or complete/cancelled status only after correction workflows are stable.
 - Plan real auth and family access roles.
 - Design reminder notification delivery with explicit caregiver-controlled setup.
 - Plan BP charts and reports after the manual tracking workflow stays stable.

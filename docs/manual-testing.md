@@ -82,6 +82,13 @@ Use this checklist for browser-based MVP regression testing against the local Ne
 - Valid appointment with only date/time saves and appears in the follow-up list.
 - Valid appointment with doctor, hospital, reason, and notes saves and displays optional fields.
 - Follow-up list shows appointments in appointment date/time order.
+- Follow-up card shows Edit follow-up.
+- Edit page opens from the follow-up list.
+- Edit page pre-fills appointment date/time, doctor, hospital, reason, and notes.
+- Saving changed appointment details returns to the follow-up list.
+- Clearing doctor, hospital, reason, and notes saves and removes those optional fields from display.
+- Invalid appointment date/time shows a validation error.
+- Invalid patient or follow-up edit URL shows 404.
 - Navigation works from patient to follow-ups, from follow-ups to Add follow-up, back to follow-ups, and back to patient.
 - No medical advice, urgency wording, appointment importance classification, treatment recommendation, or doctor recommendation appears.
 
