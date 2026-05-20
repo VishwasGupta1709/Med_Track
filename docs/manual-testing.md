@@ -32,6 +32,11 @@ Use this checklist for browser-based MVP regression testing against the local Ne
 - Medicine frequency display shows caregiver-friendly text for numeric values such as `1` and `2`.
 - Frequency/timing mismatch shows a validation error.
 - Medicine edit opens, pre-fills existing values, preserves existing timing IDs, and saves changes.
+- Medicine edit can reduce frequency from `3` to `2` by removing one existing timing row.
+- After timing removal, medicine list shows only the remaining active timings.
+- After timing removal, future schedule generation does not create doses for the removed timing.
+- Existing historical dose events for removed timings are preserved.
+- No copy suggests which timing should be removed.
 - Edit submit button says `Save medicine`.
 
 ## Medicine Stop

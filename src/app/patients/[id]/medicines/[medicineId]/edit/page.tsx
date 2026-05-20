@@ -30,6 +30,7 @@ export default async function EditMedicinePage({ params }: EditMedicinePageProps
         },
         include: {
           timings: {
+            where: { removedAt: null },
             orderBy: { timeOfDay: "asc" },
           },
         },

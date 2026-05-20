@@ -24,6 +24,7 @@ export default async function PatientMedicinesPage({ params }: PatientMedicinesP
       medicines: {
         include: {
           timings: {
+            where: { removedAt: null },
             orderBy: { timeOfDay: "asc" },
           },
         },

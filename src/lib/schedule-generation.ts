@@ -99,6 +99,7 @@ export async function generateDoseEventsForPatient(
     },
     include: {
       timings: {
+        where: { removedAt: null },
         orderBy: { timeOfDay: "asc" },
       },
     },

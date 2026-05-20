@@ -77,6 +77,7 @@ export function MedicineForm(props: MedicineFormProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timings, setTimings] = useState<TimingRow[]>(initialTimings);
+  const [removedTimingIds, setRemovedTimingIds] = useState<string[]>([]);
   const [nextTimingId, setNextTimingId] = useState(initialTimings.length + 1);
 
   function updateTiming(id: number, field: "label" | "timeOfDay", value: string) {
@@ -91,6 +92,14 @@ export function MedicineForm(props: MedicineFormProps) {
   }
 
   function removeTiming(id: number) {
+    const timingToRemove = timings.find((timing) => timing.id === id);
+
+    if (timingToRemove?.persistedId) {
+      setRemovedTimingIds((ids) =>
+        ids.includes(timingToRemove.persistedId!) ? ids : [...ids, timingToRemove.persistedId!],
+      );
+    }
+
     setTimings((current) => current.filter((timing) => timing.id !== id));
   }
 
@@ -114,6 +123,7 @@ export function MedicineForm(props: MedicineFormProps) {
         label: timing.label,
         timeOfDay: timing.timeOfDay,
       })),
+      removedTimingIds: isEditMode ? removedTimingIds : [],
     };
 
     const validation = validateMedicineInput(payload);
@@ -270,7 +280,7 @@ export function MedicineForm(props: MedicineFormProps) {
                 aria-describedby="timings-error"
               />
             </label>
-            {timings.length > 1 && (!isEditMode || !timing.persistedId) ? (
+            {timings.length > 1 ? (
               <button
                 className="secondary-button timing-remove"
                 type="button"

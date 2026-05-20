@@ -22,6 +22,7 @@ type MedicineTimingEditInput = MedicineTimingInput & {
 
 type MedicineEditInput = Omit<MedicineInput, "timings"> & {
   timings: MedicineTimingEditInput[];
+  removedTimingIds: string[];
 };
 
 function cleanOptionalString(value: unknown) {
@@ -58,6 +59,24 @@ function normalizeTimings(value: unknown): MedicineTimingEditInput[] {
   return timings;
 }
 
+function normalizeRemovedTimingIds(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const ids = new Set<string>();
+
+  for (const item of value) {
+    const id = cleanOptionalString(item);
+
+    if (id) {
+      ids.add(id);
+    }
+  }
+
+  return [...ids];
+}
+
 function normalizeMedicineBody(body: unknown): MedicineEditInput {
   const data = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
 
@@ -71,6 +90,7 @@ function normalizeMedicineBody(body: unknown): MedicineEditInput {
     startDate: typeof data.startDate === "string" ? data.startDate.trim() : "",
     endDate: cleanOptionalString(data.endDate),
     timings: normalizeTimings(data.timings),
+    removedTimingIds: normalizeRemovedTimingIds(data.removedTimingIds),
   };
 }
 
@@ -111,14 +131,25 @@ export async function PATCH(request: Request, context: RouteContext) {
   const timingIds = input.timings
     .map((timing) => timing.id)
     .filter((timingId): timingId is string => Boolean(timingId));
+  const removedTimingIdSet = new Set(input.removedTimingIds);
+  const overlappingTimingId = timingIds.find((timingId) => removedTimingIdSet.has(timingId));
+
+  if (overlappingTimingId) {
+    return NextResponse.json(
+      { errors: { timings: "A removed timing cannot also be submitted as active." } },
+      { status: 400 },
+    );
+  }
 
   const result = await prisma.$transaction(async (tx) => {
+    const now = new Date();
     const existingTimings =
       timingIds.length > 0
         ? await tx.medicineTiming.findMany({
             where: {
               id: { in: timingIds },
               medicineId,
+              removedAt: null,
             },
             select: { id: true },
           })
@@ -129,6 +160,36 @@ export async function PATCH(request: Request, context: RouteContext) {
       return {
         error: "One or more timings do not belong to this medicine.",
       };
+    }
+
+    const removedTimings =
+      input.removedTimingIds.length > 0
+        ? await tx.medicineTiming.findMany({
+            where: {
+              id: { in: input.removedTimingIds },
+              medicineId,
+            },
+            select: { id: true },
+          })
+        : [];
+    const foundRemovedTimingIds = new Set(removedTimings.map((timing) => timing.id));
+
+    if (foundRemovedTimingIds.size !== input.removedTimingIds.length) {
+      return {
+        error: "One or more removed timings do not belong to this medicine.",
+      };
+    }
+
+    if (input.removedTimingIds.length > 0) {
+      await tx.medicineTiming.updateMany({
+        where: {
+          id: { in: input.removedTimingIds },
+          medicineId,
+        },
+        data: {
+          removedAt: now,
+        },
+      });
     }
 
     for (const timing of input.timings) {
@@ -146,16 +207,31 @@ export async function PATCH(request: Request, context: RouteContext) {
             medicineId,
             label: timing.label || null,
             timeOfDay: timing.timeOfDay,
+            removedAt: null,
           },
         });
       }
     }
 
+    const deletedRemovedTimingFuturePendingDoseEvents =
+      input.removedTimingIds.length > 0
+        ? await tx.doseEvent.deleteMany({
+            where: {
+              medicineId,
+              medicineTimingId: { in: input.removedTimingIds },
+              scheduledAt: {
+                gt: now,
+              },
+              status: "PENDING",
+            },
+          })
+        : { count: 0 };
+
     const deletedFuturePendingDoseEvents = await tx.doseEvent.deleteMany({
       where: {
         medicineId,
         scheduledAt: {
-          gte: new Date(),
+          gte: now,
         },
         status: "PENDING",
       },
@@ -175,6 +251,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       },
       include: {
         timings: {
+          where: { removedAt: null },
           orderBy: { timeOfDay: "asc" },
         },
       },
@@ -182,7 +259,8 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     return {
       medicine: updatedMedicine,
-      deletedFuturePendingDoseEvents: deletedFuturePendingDoseEvents.count,
+      deletedFuturePendingDoseEvents:
+        deletedRemovedTimingFuturePendingDoseEvents.count + deletedFuturePendingDoseEvents.count,
     };
   });
 

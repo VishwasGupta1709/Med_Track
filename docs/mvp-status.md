@@ -14,6 +14,7 @@ This document summarizes the current MedTrack MVP implementation. It separates w
 - Manual medicine entry with optional dosage, form, frequency, food instruction, instructions, start date, end date, and timings.
 - Medicine list and edit flows.
 - Frequency/timing validation requires the entered timing count to match frequency values such as once daily, twice daily, `2`, `3`, and `4`.
+- Medicine edit supports soft-removing timings while preserving historical dose events.
 - Medicine stop flow marks a medicine as stopped and removes only future `PENDING` dose events scheduled after the stop time.
 - Existing dose history is preserved when a medicine is stopped.
 

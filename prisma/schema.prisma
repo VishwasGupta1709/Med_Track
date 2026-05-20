@@ -88,6 +88,7 @@ model MedicineTiming {
   medicineId String
   label      String?
   timeOfDay  String
+  removedAt  DateTime?
   medicine   Medicine @relation(fields: [medicineId], references: [id], onDelete: Cascade)
   doseEvents DoseEvent[]
 

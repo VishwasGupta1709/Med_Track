@@ -6,6 +6,7 @@ const prismaMocks = vi.hoisted(() => ({
   medicineUpdate: vi.fn(),
   medicineTimingFindMany: vi.fn(),
   medicineTimingUpdate: vi.fn(),
+  medicineTimingUpdateMany: vi.fn(),
   medicineTimingCreate: vi.fn(),
   medicineTimingDelete: vi.fn(),
   medicineTimingDeleteMany: vi.fn(),
@@ -82,6 +83,7 @@ function mockTransaction() {
         medicineTiming: {
           findMany: typeof prismaMocks.medicineTimingFindMany;
           update: typeof prismaMocks.medicineTimingUpdate;
+          updateMany: typeof prismaMocks.medicineTimingUpdateMany;
           create: typeof prismaMocks.medicineTimingCreate;
           delete: typeof prismaMocks.medicineTimingDelete;
           deleteMany: typeof prismaMocks.medicineTimingDeleteMany;
@@ -94,6 +96,7 @@ function mockTransaction() {
         medicineTiming: {
           findMany: prismaMocks.medicineTimingFindMany,
           update: prismaMocks.medicineTimingUpdate,
+          updateMany: prismaMocks.medicineTimingUpdateMany,
           create: prismaMocks.medicineTimingCreate,
           delete: prismaMocks.medicineTimingDelete,
           deleteMany: prismaMocks.medicineTimingDeleteMany,
@@ -213,6 +216,7 @@ describe("edit medicine route", () => {
       },
       include: {
         timings: {
+          where: { removedAt: null },
           orderBy: { timeOfDay: "asc" },
         },
       },
@@ -255,6 +259,7 @@ describe("edit medicine route", () => {
         medicineId: "medicine-1",
         label: "Night",
         timeOfDay: "21:00",
+        removedAt: null,
       },
     });
   });
@@ -279,6 +284,152 @@ describe("edit medicine route", () => {
     expect(prismaMocks.medicineUpdate).not.toHaveBeenCalled();
   });
 
+  it("accepts removedTimingIds and soft-removes removed persisted timings", async () => {
+    const now = new Date("2026-05-17T10:00:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    mockTransaction();
+    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
+    prismaMocks.medicineFindFirst.mockResolvedValueOnce({ id: "medicine-1" });
+    prismaMocks.medicineTimingFindMany
+      .mockResolvedValueOnce([{ id: "timing-1" }, { id: "timing-2" }])
+      .mockResolvedValueOnce([{ id: "timing-3" }]);
+    prismaMocks.medicineTimingUpdate.mockResolvedValue({ id: "timing-1" });
+    prismaMocks.medicineTimingUpdateMany.mockResolvedValueOnce({ count: 1 });
+    prismaMocks.doseEventDeleteMany
+      .mockResolvedValueOnce({ count: 4 })
+      .mockResolvedValueOnce({ count: 2 });
+    prismaMocks.medicineUpdate.mockResolvedValueOnce(
+      createUpdatedMedicine({
+        frequency: "2",
+        timings: [
+          { id: "timing-1", medicineId: "medicine-1", label: "Morning", timeOfDay: "09:00" },
+          { id: "timing-2", medicineId: "medicine-1", label: "Night", timeOfDay: "21:00" },
+        ],
+      }),
+    );
+
+    const response = await PATCH(
+      createRequest(
+        createPayload({
+          frequency: "2",
+          timings: [
+            { id: "timing-1", label: "Morning", timeOfDay: "09:00" },
+            { id: "timing-2", label: "Night", timeOfDay: "21:00" },
+          ],
+          removedTimingIds: ["timing-3"],
+        }),
+      ),
+      createContext(),
+    );
+
+    expect(response.status).toBe(200);
+    expect(prismaMocks.medicineTimingFindMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        id: { in: ["timing-1", "timing-2"] },
+        medicineId: "medicine-1",
+        removedAt: null,
+      },
+      select: { id: true },
+    });
+    expect(prismaMocks.medicineTimingFindMany).toHaveBeenNthCalledWith(2, {
+      where: {
+        id: { in: ["timing-3"] },
+        medicineId: "medicine-1",
+      },
+      select: { id: true },
+    });
+    expect(prismaMocks.medicineTimingUpdateMany).toHaveBeenCalledWith({
+      where: {
+        id: { in: ["timing-3"] },
+        medicineId: "medicine-1",
+      },
+      data: {
+        removedAt: now,
+      },
+    });
+  });
+
+  it("rejects a removed timing id that does not belong to the medicine", async () => {
+    mockTransaction();
+    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
+    prismaMocks.medicineFindFirst.mockResolvedValueOnce({ id: "medicine-1" });
+    prismaMocks.medicineTimingFindMany
+      .mockResolvedValueOnce([{ id: "timing-1" }, { id: "timing-2" }])
+      .mockResolvedValueOnce([]);
+
+    const response = await PATCH(
+      createRequest(
+        createPayload({
+          frequency: "2",
+          timings: [
+            { id: "timing-1", label: "Morning", timeOfDay: "09:00" },
+            { id: "timing-2", label: "Night", timeOfDay: "21:00" },
+          ],
+          removedTimingIds: ["other-timing"],
+        }),
+      ),
+      createContext(),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      errors: {
+        timings: "One or more removed timings do not belong to this medicine.",
+      },
+    });
+    expect(prismaMocks.medicineTimingUpdateMany).not.toHaveBeenCalled();
+    expect(prismaMocks.doseEventDeleteMany).not.toHaveBeenCalled();
+    expect(prismaMocks.medicineUpdate).not.toHaveBeenCalled();
+  });
+
+  it("rejects a timing id that is both active and removed", async () => {
+    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
+    prismaMocks.medicineFindFirst.mockResolvedValueOnce({ id: "medicine-1" });
+
+    const response = await PATCH(
+      createRequest(
+        createPayload({
+          timings: [{ id: "timing-1", label: "Morning", timeOfDay: "09:00" }],
+          removedTimingIds: ["timing-1"],
+        }),
+      ),
+      createContext(),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      errors: {
+        timings: "A removed timing cannot also be submitted as active.",
+      },
+    });
+    expect(prismaMocks.transaction).not.toHaveBeenCalled();
+  });
+
+  it("validates frequency against final active timing count after removal", async () => {
+    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
+    prismaMocks.medicineFindFirst.mockResolvedValueOnce({ id: "medicine-1" });
+
+    const response = await PATCH(
+      createRequest(
+        createPayload({
+          frequency: "2",
+          timings: [{ id: "timing-1", label: "Morning", timeOfDay: "09:00" }],
+          removedTimingIds: ["timing-2"],
+        }),
+      ),
+      createContext(),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      errors: {
+        timings: "Frequency is 2 times daily, so please add exactly 2 timings.",
+      },
+    });
+    expect(prismaMocks.transaction).not.toHaveBeenCalled();
+  });
+
   it("does not delete timing rows", async () => {
     mockSuccessfulEdit();
 
@@ -286,6 +437,52 @@ describe("edit medicine route", () => {
 
     expect(prismaMocks.medicineTimingDelete).not.toHaveBeenCalled();
     expect(prismaMocks.medicineTimingDeleteMany).not.toHaveBeenCalled();
+  });
+
+  it("deletes future PENDING dose events for removed timing ids", async () => {
+    const now = new Date("2026-05-17T10:00:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    mockTransaction();
+    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
+    prismaMocks.medicineFindFirst.mockResolvedValueOnce({ id: "medicine-1" });
+    prismaMocks.medicineTimingFindMany
+      .mockResolvedValueOnce([{ id: "timing-1" }, { id: "timing-2" }])
+      .mockResolvedValueOnce([{ id: "timing-3" }]);
+    prismaMocks.medicineTimingUpdate.mockResolvedValue({ id: "timing-1" });
+    prismaMocks.medicineTimingUpdateMany.mockResolvedValueOnce({ count: 1 });
+    prismaMocks.doseEventDeleteMany
+      .mockResolvedValueOnce({ count: 4 })
+      .mockResolvedValueOnce({ count: 2 });
+    prismaMocks.medicineUpdate.mockResolvedValueOnce(createUpdatedMedicine());
+
+    await PATCH(
+      createRequest(
+        createPayload({
+          frequency: "2",
+          timings: [
+            { id: "timing-1", label: "Morning", timeOfDay: "09:00" },
+            { id: "timing-2", label: "Night", timeOfDay: "21:00" },
+          ],
+          removedTimingIds: ["timing-3"],
+        }),
+      ),
+      createContext(),
+    );
+
+    expect(prismaMocks.doseEventDeleteMany).toHaveBeenNthCalledWith(1, {
+      where: {
+        medicineId: "medicine-1",
+        medicineTimingId: { in: ["timing-3"] },
+        scheduledAt: {
+          gt: now,
+        },
+        status: "PENDING",
+      },
+    });
+    expect(prismaMocks.doseEventDeleteMany.mock.calls[0][0].where.status).not.toEqual(
+      expect.arrayContaining(["DUE", "TAKEN", "SKIPPED", "MISSED", "LATE"]),
+    );
   });
 
   it("deletes only future PENDING dose events for this medicine", async () => {

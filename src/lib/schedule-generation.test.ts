@@ -32,6 +32,7 @@ function createMedicine(
         medicineId,
         label: timing.label ?? null,
         timeOfDay: timing.timeOfDay ?? "09:00",
+        removedAt: timing.removedAt ?? null,
       }),
     ),
   };
@@ -67,11 +68,22 @@ describe("generateDoseEventsForPatient", () => {
       },
       include: {
         timings: {
+          where: { removedAt: null },
           orderBy: { timeOfDay: "asc" },
         },
       },
     });
     expect(createMany).toHaveBeenCalled();
+  });
+
+  it("requests only active medicine timings", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 16, 10, 0));
+    const { prisma, findMany } = createPrismaMock([createMedicine()]);
+
+    await generateDoseEventsForPatient(prisma, "patient-1");
+
+    expect(findMany.mock.calls[0][0].include.timings.where).toEqual({ removedAt: null });
   });
 
   it("ignores invalid timing values", async () => {
