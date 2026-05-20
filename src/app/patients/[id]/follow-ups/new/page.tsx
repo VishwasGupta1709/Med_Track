@@ -31,9 +31,14 @@ export default async function NewFollowUpPage({ params }: NewFollowUpPageProps) 
           <h1>Add follow-up</h1>
           <p>{patient.fullName}</p>
         </div>
-        <Link className="secondary-button" href={`/patients/${patient.id}/follow-ups`}>
-          Back to follow-ups
-        </Link>
+        <div className="header-actions">
+          <Link className="secondary-button" href={`/patients/${patient.id}/follow-ups`}>
+            Back to follow-ups
+          </Link>
+          <Link className="secondary-button" href={`/patients/${patient.id}`}>
+            Back to patient
+          </Link>
+        </div>
       </header>
 
       <section className="form-panel">

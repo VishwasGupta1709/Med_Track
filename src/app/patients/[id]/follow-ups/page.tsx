@@ -84,10 +84,18 @@ export default async function PatientFollowUpsPage({ params }: PatientFollowUpsP
       {followUps.length === 0 ? (
         <section className="empty-state">
           <h2>No follow-ups yet</h2>
-          <p>Add the first follow-up appointment for this patient.</p>
-          <Link className="primary-button" href={`/patients/${patient.id}/follow-ups/new`}>
-            Add follow-up
-          </Link>
+          <p>
+            Record upcoming doctor or hospital follow-ups so the family can keep appointment
+            details handy.
+          </p>
+          <div className="header-actions">
+            <Link className="primary-button" href={`/patients/${patient.id}/follow-ups/new`}>
+              Add follow-up
+            </Link>
+            <Link className="secondary-button" href={`/patients/${patient.id}`}>
+              Back to patient
+            </Link>
+          </div>
         </section>
       ) : (
         <section className="medicine-list" aria-label="Follow-up appointments">

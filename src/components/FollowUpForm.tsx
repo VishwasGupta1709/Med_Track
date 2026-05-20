@@ -61,6 +61,11 @@ export function FollowUpForm({ patientId }: FollowUpFormProps) {
 
   return (
     <form className="patient-form" noValidate onSubmit={handleSubmit}>
+      <p className="form-helper">
+        Enter appointment details exactly as shared by the doctor or hospital. MedTrack stores the
+        follow-up without interpreting it.
+      </p>
+
       {errors.form ? <p className="form-error">{errors.form}</p> : null}
 
       <label>

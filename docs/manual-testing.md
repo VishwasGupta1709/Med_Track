@@ -66,6 +66,17 @@
 - BP reading correction opens from Edit reading, pre-fills values, saves changes, and allows optional pulse/notes to be cleared
 - No diagnostic BP wording or value classification appears
 
+## Follow-Up Manual Test
+
+- No follow-ups empty state explains that follow-up details can be recorded and shows Add follow-up plus Back to patient
+- Follow-up form shows neutral helper copy and does not interpret appointment details
+- Blank or invalid appointment date/time shows a validation error
+- Valid appointment with only date/time saves and appears in the follow-up list
+- Valid appointment with doctor, hospital, reason, and notes saves and displays those optional fields
+- Follow-up list shows appointments in appointment date/time order
+- Navigation works from patient to follow-ups, from follow-ups to Add follow-up, back to follow-ups, and back to patient
+- No medical advice, urgency wording, appointment importance classification, treatment recommendation, or doctor recommendation appears
+
 ## Completed UI Improvements
 
 - Medicine frequency display now shows numeric values like "1" and "2" as caregiver-friendly text such as "Once daily" and "2 times daily"
