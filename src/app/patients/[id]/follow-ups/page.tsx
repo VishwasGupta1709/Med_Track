@@ -1,5 +1,3 @@
-import type { FollowUp } from "@prisma/client";
-import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { FollowUpCard } from "@/components/FollowUpCard";
@@ -15,34 +13,11 @@ type PatientFollowUpsPageProps = {
   }>;
 };
 
-async function getRequestOrigin() {
-  const headersList = await headers();
-  const host = headersList.get("host");
-  const protocol = headersList.get("x-forwarded-proto") ?? "http";
-
-  return host ? `${protocol}://${host}` : null;
-}
-
 async function getFollowUps(patientId: string) {
-  const origin = await getRequestOrigin();
-
-  if (!origin) {
-    return [];
-  }
-
-  const response = await fetch(`${origin}/api/patients/${patientId}/follow-ups`, {
-    cache: "no-store",
+  return prisma.followUp.findMany({
+    where: { patientId },
+    orderBy: { appointmentAt: "asc" },
   });
-
-  if (response.status === 404) {
-    notFound();
-  }
-
-  if (!response.ok) {
-    throw new Error("Unable to load follow-ups.");
-  }
-
-  return (await response.json()) as FollowUp[];
 }
 
 export default async function PatientFollowUpsPage({ params }: PatientFollowUpsPageProps) {
