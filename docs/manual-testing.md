@@ -2,6 +2,14 @@
 
 Use this checklist for browser-based MVP regression testing against the local Next.js app and local PostgreSQL database. It is not a changelog; keep it focused on flows that should continue working.
 
+## Latest Manual Regression Result
+
+- Date: 2026-05-20
+- Environment: local Next.js app with local Docker PostgreSQL
+- Result: Passed
+- Scope: full MVP regression checklist
+- Notes: safe medicine timing removal regression passed, including reducing frequency from `3` to `2` by removing one existing timing row.
+
 ## Environment
 
 - Local Next.js app is running.

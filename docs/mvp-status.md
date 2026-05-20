@@ -2,6 +2,8 @@
 
 This document summarizes the current MedTrack MVP implementation. It separates what exists today from future scope so the project does not overclaim medical, notification, auth, or AI capabilities.
 
+Latest manual MVP regression pass completed locally on 2026-05-20.
+
 ## Completed Features
 
 ### Patient Profile
