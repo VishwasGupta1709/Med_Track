@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MedicineForm } from "@/components/MedicineForm";
+import { requireCurrentUser } from "@/lib/auth/current-user";
+import {
+  MANAGE_MEDICINE_ROLES,
+  PatientAccessError,
+  requirePatientMembership,
+} from "@/lib/auth/patient-access";
 import { prisma } from "@/lib/prisma";
-
-const DEMO_USER_ID = "demo-user";
 
 type EditMedicinePageProps = {
   params: Promise<{
@@ -18,11 +22,20 @@ function formatDateInput(date: Date) {
 
 export default async function EditMedicinePage({ params }: EditMedicinePageProps) {
   const { id, medicineId } = await params;
-  const patient = await prisma.patient.findFirst({
-    where: {
-      id,
-      createdByUserId: DEMO_USER_ID,
-    },
+  const currentUser = await requireCurrentUser();
+
+  try {
+    await requirePatientMembership(id, currentUser.id, MANAGE_MEDICINE_ROLES);
+  } catch (error) {
+    if (error instanceof PatientAccessError) {
+      notFound();
+    }
+
+    throw error;
+  }
+
+  const patient = await prisma.patient.findUnique({
+    where: { id },
     include: {
       medicines: {
         where: {

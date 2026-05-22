@@ -1,4 +1,10 @@
 import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import {
+  MANAGE_MEDICINE_ROLES,
+  PatientAccessError,
+  requirePatientMembership,
+} from "@/lib/auth/patient-access";
 import { prisma } from "@/lib/prisma";
 import {
   MedicineInput,
@@ -6,8 +12,6 @@ import {
   parseDateInput,
   validateMedicineInput,
 } from "@/lib/medicine-validation";
-
-const DEMO_USER_ID = "demo-user";
 
 type RouteContext = {
   params: Promise<{
@@ -94,19 +98,37 @@ function normalizeMedicineBody(body: unknown): MedicineEditInput {
   };
 }
 
+async function authorizeMedicineManager(patientId: string) {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser) {
+    return {
+      response: NextResponse.json({ error: "Authentication required." }, { status: 401 }),
+    };
+  }
+
+  try {
+    await requirePatientMembership(patientId, currentUser.id, MANAGE_MEDICINE_ROLES);
+    return {};
+  } catch (error) {
+    if (error instanceof PatientAccessError && error.code === "PATIENT_ROLE_REQUIRED") {
+      return {
+        response: NextResponse.json({ error: "Patient access forbidden." }, { status: 403 }),
+      };
+    }
+
+    return {
+      response: NextResponse.json({ error: "Patient not found." }, { status: 404 }),
+    };
+  }
+}
+
 export async function PATCH(request: Request, context: RouteContext) {
   const { id, medicineId } = await context.params;
+  const authorization = await authorizeMedicineManager(id);
 
-  const patient = await prisma.patient.findFirst({
-    where: {
-      id,
-      createdByUserId: DEMO_USER_ID,
-    },
-    select: { id: true },
-  });
-
-  if (!patient) {
-    return NextResponse.json({ error: "Patient not found." }, { status: 404 });
+  if (authorization.response) {
+    return authorization.response;
   }
 
   const medicine = await prisma.medicine.findFirst({

@@ -40,6 +40,7 @@ Use this checklist for browser-based MVP regression testing against the local Ne
 
 ## Medicine Tracking
 
+- For a `PRIMARY_CAREGIVER` membership, medicine list loads and Add medicine is available.
 - Medicine can be added manually with one or more timings.
 - Medicine frequency display shows caregiver-friendly text for numeric values such as `1` and `2`.
 - Frequency/timing mismatch shows a validation error.
@@ -50,6 +51,7 @@ Use this checklist for browser-based MVP regression testing against the local Ne
 - Existing historical dose events for removed timings are preserved.
 - No copy suggests which timing should be removed.
 - Edit submit button says `Save medicine`.
+- Optional role check: temporarily change the local `PatientMember` role to `CAREGIVER` or `VIEWER`; medicine list remains viewable, while add/edit/stop medicine requests are blocked. Restore `PRIMARY_CAREGIVER` afterward.
 
 ## Medicine Stop
 

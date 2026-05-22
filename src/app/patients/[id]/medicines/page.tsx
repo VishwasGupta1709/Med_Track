@@ -1,9 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PatientRole } from "@prisma/client";
 import { MedicineCard } from "@/components/MedicineCard";
+import { requireCurrentUser } from "@/lib/auth/current-user";
+import {
+  MANAGE_MEDICINE_ROLES,
+  PatientAccessError,
+  hasPatientRole,
+  requirePatientMembership,
+  VIEW_PATIENT_ROLES,
+} from "@/lib/auth/patient-access";
 import { prisma } from "@/lib/prisma";
-
-const DEMO_USER_ID = "demo-user";
 
 export const dynamic = "force-dynamic";
 
@@ -15,11 +22,22 @@ type PatientMedicinesPageProps = {
 
 export default async function PatientMedicinesPage({ params }: PatientMedicinesPageProps) {
   const { id } = await params;
-  const patient = await prisma.patient.findFirst({
-    where: {
-      id,
-      createdByUserId: DEMO_USER_ID,
-    },
+  const currentUser = await requireCurrentUser();
+  let role: PatientRole;
+
+  try {
+    const membership = await requirePatientMembership(id, currentUser.id, VIEW_PATIENT_ROLES);
+    role = membership.role;
+  } catch (error) {
+    if (error instanceof PatientAccessError) {
+      notFound();
+    }
+
+    throw error;
+  }
+
+  const patient = await prisma.patient.findUnique({
+    where: { id },
     include: {
       medicines: {
         include: {
@@ -37,6 +55,8 @@ export default async function PatientMedicinesPage({ params }: PatientMedicinesP
     notFound();
   }
 
+  const canManageMedicines = hasPatientRole(role, MANAGE_MEDICINE_ROLES);
+
   return (
     <main className="page">
       <header className="page-header">
@@ -48,9 +68,11 @@ export default async function PatientMedicinesPage({ params }: PatientMedicinesP
           <Link className="secondary-button" href={`/patients/${patient.id}`}>
             Back to patient
           </Link>
-          <Link className="primary-button" href={`/patients/${patient.id}/medicines/new`}>
-            Add medicine
-          </Link>
+          {canManageMedicines ? (
+            <Link className="primary-button" href={`/patients/${patient.id}/medicines/new`}>
+              Add medicine
+            </Link>
+          ) : null}
         </div>
       </header>
 
@@ -59,9 +81,11 @@ export default async function PatientMedicinesPage({ params }: PatientMedicinesP
           <h2>No medicines yet</h2>
           <p>Add medicines manually, then generate a schedule from active medicines and timings.</p>
           <div className="empty-state-actions">
-            <Link className="primary-button" href={`/patients/${patient.id}/medicines/new`}>
-              Add medicine
-            </Link>
+            {canManageMedicines ? (
+              <Link className="primary-button" href={`/patients/${patient.id}/medicines/new`}>
+                Add medicine
+              </Link>
+            ) : null}
             <Link className="secondary-button" href={`/patients/${patient.id}`}>
               Back to patient
             </Link>

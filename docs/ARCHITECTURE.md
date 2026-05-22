@@ -35,7 +35,9 @@ The auth foundation includes local `User`, `PatientRole`, and `PatientMember` re
 
 Authorization Rollout Slice 1 converts patient list, root dashboard patient summaries, patient detail, and patient create/detail APIs to `PatientMember` access. New patient creation now stores the creator's local `User.id` in `Patient.createdByUserId` and creates a `PatientMember` row with `PRIMARY_CAREGIVER`.
 
-During the transition, `Patient.createdByUserId` remains a `String` and many non-patient-profile MVP routes still check `createdByUserId = "demo-user"`. Middleware provides signed-in protection for patient-related routes, but remaining medicine, schedule, dose, BP, and follow-up routes still need route-by-route `PatientMember` authorization in future slices. Authorization must be enforced in server-rendered pages and API route handlers, not only in the UI or middleware.
+Authorization Rollout Slice 2 converts medicine list/add/edit/stop pages and APIs to `PatientMember` access. All patient roles can view medicines. Only `PRIMARY_CAREGIVER` can add, edit, or stop medicines.
+
+During the transition, `Patient.createdByUserId` remains a `String` and many non-patient-profile/non-medicine MVP routes still check `createdByUserId = "demo-user"`. Middleware provides signed-in protection for patient-related routes, but remaining schedule, dose, BP, and follow-up routes still need route-by-route `PatientMember` authorization in future slices. Authorization must be enforced in server-rendered pages and API route handlers, not only in the UI or middleware.
 
 ## Validation And Business Helpers
 

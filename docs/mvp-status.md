@@ -14,6 +14,9 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 
 ### Medicine Tracking
 
+- Authorization Rollout Slice 2 is complete for medicine list, add, edit, and stop pages/APIs.
+- `PRIMARY_CAREGIVER` can view, add, edit, and stop medicines.
+- `CAREGIVER` and `VIEWER` can view medicines but cannot add, edit, or stop medicines.
 - Manual medicine entry with optional dosage, form, frequency, food instruction, instructions, start date, end date, and timings.
 - Medicine list and edit flows.
 - Frequency/timing validation requires the entered timing count to match frequency values such as once daily, twice daily, `2`, `3`, and `4`.
@@ -53,7 +56,7 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 
 ## Not Implemented Yet
 
-- Full route-by-route patient-member authorization for medicine, schedule, dose, BP, and follow-up routes.
+- Full route-by-route patient-member authorization for schedule, dose, BP, and follow-up routes.
 - Production notification delivery.
 - Calendar integration.
 - BP reminder delivery.
@@ -69,7 +72,8 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 
 - Clerk auth foundation exists, with local `User` and `PatientMember` tables.
 - Patient list/detail/create now use `PatientMember` membership checks.
-- `createdByUserId = "demo-user"` is still used by many non-patient-profile MVP routes as a transition placeholder.
+- Medicine list/add/edit/stop now use `PatientMember` membership and role checks.
+- `createdByUserId = "demo-user"` is still used by schedule, dose, BP, and follow-up routes as a transition placeholder.
 - Existing demo patients need to be claimed with `npm run claim:demo-data` before they appear for a signed-in local user.
 - Patient-related routes have signed-in middleware protection, but remaining API/page authorization must still be rolled out route by route.
 - The app is currently a local development MVP.
@@ -80,7 +84,7 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 ## Recommended Next Milestones
 
 - Plan follow-up delete or complete/cancelled status only after correction workflows are stable.
-- Continue `PatientMember` authorization rollout across medicine, schedule, dose, BP, and follow-up pages and API routes.
+- Continue `PatientMember` authorization rollout across schedule, dose, BP, and follow-up pages and API routes.
 - Design reminder notification delivery with explicit caregiver-controlled setup.
 - Plan BP charts and reports after the manual tracking workflow stays stable.
 - Consider OCR only after manual medicine workflow, review, and confirmation flows are stable.

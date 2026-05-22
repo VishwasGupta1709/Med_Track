@@ -34,7 +34,7 @@ Important behavior:
 - `CAREGIVER`
 - `VIEWER`
 
-Current permission helpers treat all roles as patient viewers, only `PRIMARY_CAREGIVER` as a patient editor, `PRIMARY_CAREGIVER` as the medicine manager, and `PRIMARY_CAREGIVER` plus `CAREGIVER` as dose/health trackers. Route-by-route enforcement is still being rolled out.
+Current permission helpers treat all roles as patient and medicine viewers, only `PRIMARY_CAREGIVER` as a patient editor and medicine manager, and `PRIMARY_CAREGIVER` plus `CAREGIVER` as dose/health trackers. Route-by-route enforcement is still being rolled out.
 
 ## PatientMember
 
@@ -45,7 +45,7 @@ Important behavior:
 - A patient/user pair is unique.
 - Deleting a patient or user cascades to related memberships.
 - New patient creation creates a `PRIMARY_CAREGIVER` membership for the creator.
-- Route-by-route enforcement is not complete yet; medicine, schedule, dose, BP, and follow-up routes remain transitional until later rollout slices.
+- Route-by-route enforcement is not complete yet; schedule, dose, BP, and follow-up routes remain transitional until later rollout slices.
 
 ## Medicine
 

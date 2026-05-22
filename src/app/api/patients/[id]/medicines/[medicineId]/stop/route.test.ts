@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { PatientRole } from "@prisma/client";
 import { DOSE_STATUS } from "@/lib/dose-status";
+
+const authMocks = vi.hoisted(() => ({
+  getCurrentUser: vi.fn(),
+}));
+
+const patientAccessMocks = vi.hoisted(() => ({
+  requirePatientMembership: vi.fn(),
+}));
 
 const prismaMocks = vi.hoisted(() => ({
   patientFindFirst: vi.fn(),
@@ -8,6 +17,19 @@ const prismaMocks = vi.hoisted(() => ({
   doseEventDeleteMany: vi.fn(),
   transaction: vi.fn(),
 }));
+
+vi.mock("@/lib/auth/current-user", () => ({
+  getCurrentUser: authMocks.getCurrentUser,
+}));
+
+vi.mock("@/lib/auth/patient-access", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/patient-access")>();
+
+  return {
+    ...actual,
+    requirePatientMembership: patientAccessMocks.requirePatientMembership,
+  };
+});
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
@@ -21,7 +43,38 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+import {
+  MANAGE_MEDICINE_ROLES,
+  PatientAccessError,
+} from "@/lib/auth/patient-access";
 import { POST } from "./route";
+
+function createCurrentUser() {
+  return {
+    id: "local-user-1",
+    clerkUserId: "clerk-user-1",
+    email: "caregiver@example.com",
+    displayName: "Care Giver",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+function createMembership(role = PatientRole.PRIMARY_CAREGIVER) {
+  return {
+    id: "membership-1",
+    patientId: "patient-1",
+    userId: "local-user-1",
+    role,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+function mockAuthorized(role = PatientRole.PRIMARY_CAREGIVER) {
+  authMocks.getCurrentUser.mockResolvedValueOnce(createCurrentUser());
+  patientAccessMocks.requirePatientMembership.mockResolvedValueOnce(createMembership(role));
+}
 
 function createRequest() {
   return new Request("http://localhost/api/patients/patient-1/medicines/medicine-1/stop", {
@@ -56,25 +109,49 @@ describe("stop medicine route", () => {
     vi.clearAllMocks();
   });
 
-  it("returns 404 when the patient is missing or belongs to another user", async () => {
-    prismaMocks.patientFindFirst.mockResolvedValueOnce(null);
+  it("returns 401 when unauthenticated", async () => {
+    authMocks.getCurrentUser.mockResolvedValueOnce(null);
+
+    const response = await POST(createRequest(), createContext());
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Authentication required." });
+    expect(patientAccessMocks.requirePatientMembership).not.toHaveBeenCalled();
+    expect(prismaMocks.medicineFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the patient membership is missing", async () => {
+    authMocks.getCurrentUser.mockResolvedValueOnce(createCurrentUser());
+    patientAccessMocks.requirePatientMembership.mockRejectedValueOnce(
+      new PatientAccessError("Patient access required.", "PATIENT_ACCESS_REQUIRED"),
+    );
 
     const response = await POST(createRequest(), createContext());
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "Patient not found." });
-    expect(prismaMocks.patientFindFirst).toHaveBeenCalledWith({
-      where: {
-        id: "patient-1",
-        createdByUserId: "demo-user",
-      },
-      select: { id: true },
-    });
     expect(prismaMocks.medicineFindFirst).not.toHaveBeenCalled();
   });
 
+  it.each([PatientRole.CAREGIVER, PatientRole.VIEWER])(
+    "returns 403 when %s tries to stop a medicine",
+    async () => {
+      authMocks.getCurrentUser.mockResolvedValueOnce(createCurrentUser());
+      patientAccessMocks.requirePatientMembership.mockRejectedValueOnce(
+        new PatientAccessError("Patient role not permitted.", "PATIENT_ROLE_REQUIRED"),
+      );
+
+      const response = await POST(createRequest(), createContext());
+
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({ error: "Patient access forbidden." });
+      expect(prismaMocks.medicineFindFirst).not.toHaveBeenCalled();
+      expect(prismaMocks.transaction).not.toHaveBeenCalled();
+    },
+  );
+
   it("returns 404 when the medicine is missing or belongs to another patient", async () => {
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
+    mockAuthorized();
     prismaMocks.medicineFindFirst.mockResolvedValueOnce(null);
 
     const response = await POST(createRequest(), createContext());
@@ -93,22 +170,6 @@ describe("stop medicine route", () => {
     });
   });
 
-  it("uses the demo-user ownership lookup before mutation", async () => {
-    prismaMocks.patientFindFirst.mockResolvedValueOnce(null);
-
-    await POST(createRequest(), createContext());
-
-    expect(prismaMocks.patientFindFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          id: "patient-1",
-          createdByUserId: "demo-user",
-        },
-      }),
-    );
-    expect(prismaMocks.transaction).not.toHaveBeenCalled();
-  });
-
   it("returns the stopped medicine and removed future dose event count", async () => {
     const stoppedAt = new Date("2026-05-16T10:00:00.000Z");
     const stoppedMedicine = {
@@ -120,7 +181,7 @@ describe("stop medicine route", () => {
     vi.useFakeTimers();
     vi.setSystemTime(stoppedAt);
     mockTransaction();
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
+    mockAuthorized();
     prismaMocks.medicineFindFirst.mockResolvedValueOnce({ id: "medicine-1", endDate: null });
     prismaMocks.medicineUpdate.mockResolvedValueOnce(stoppedMedicine);
     prismaMocks.doseEventDeleteMany.mockResolvedValueOnce({ count: 2 });
@@ -128,6 +189,11 @@ describe("stop medicine route", () => {
     const response = await POST(createRequest(), createContext());
 
     expect(response.status).toBe(200);
+    expect(patientAccessMocks.requirePatientMembership).toHaveBeenCalledWith(
+      "patient-1",
+      "local-user-1",
+      MANAGE_MEDICINE_ROLES,
+    );
     expect(await response.json()).toEqual({
       medicine: {
         ...stoppedMedicine,
@@ -160,7 +226,7 @@ describe("stop medicine route", () => {
     };
 
     mockTransaction();
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
+    mockAuthorized();
     prismaMocks.medicineFindFirst.mockResolvedValueOnce({
       id: "medicine-1",
       endDate: existingEndDate,
