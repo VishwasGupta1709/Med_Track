@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
+import { PatientRole } from "@prisma/client";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
 import { validatePatientInput } from "@/lib/patient-validation";
-
-const DEMO_USER_ID = "demo-user";
 
 function normalizePatientBody(body: unknown) {
   const data = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
@@ -25,8 +25,20 @@ function normalizePatientBody(body: unknown) {
 }
 
 export async function GET() {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
   const patients = await prisma.patient.findMany({
-    where: { createdByUserId: DEMO_USER_ID },
+    where: {
+      members: {
+        some: {
+          userId: currentUser.id,
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
 
@@ -34,6 +46,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
+  }
+
   const input = normalizePatientBody(await request.json().catch(() => null));
   const validation = validatePatientInput(input);
 
@@ -41,11 +59,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ errors: validation.errors }, { status: 400 });
   }
 
-  const patient = await prisma.patient.create({
-    data: {
-      ...input,
-      createdByUserId: DEMO_USER_ID,
-    },
+  const patient = await prisma.$transaction(async (tx) => {
+    const createdPatient = await tx.patient.create({
+      data: {
+        ...input,
+        createdByUserId: currentUser.id,
+      },
+    });
+
+    await tx.patientMember.create({
+      data: {
+        patientId: createdPatient.id,
+        userId: currentUser.id,
+        role: PatientRole.PRIMARY_CAREGIVER,
+      },
+    });
+
+    return createdPatient;
   });
 
   return NextResponse.json(patient, { status: 201 });

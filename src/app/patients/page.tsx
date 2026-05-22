@@ -1,14 +1,20 @@
 import Link from "next/link";
 import { PatientCard } from "@/components/PatientCard";
+import { requireCurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
-
-const DEMO_USER_ID = "demo-user";
 
 export const dynamic = "force-dynamic";
 
 export default async function PatientsPage() {
+  const currentUser = await requireCurrentUser();
   const patients = await prisma.patient.findMany({
-    where: { createdByUserId: DEMO_USER_ID },
+    where: {
+      members: {
+        some: {
+          userId: currentUser.id,
+        },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
 

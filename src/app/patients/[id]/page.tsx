@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { requireCurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
-
-const DEMO_USER_ID = "demo-user";
 
 export const dynamic = "force-dynamic";
 
@@ -14,10 +13,15 @@ type PatientDetailPageProps = {
 
 export default async function PatientDetailPage({ params }: PatientDetailPageProps) {
   const { id } = await params;
+  const currentUser = await requireCurrentUser();
   const patient = await prisma.patient.findFirst({
     where: {
       id,
-      createdByUserId: DEMO_USER_ID,
+      members: {
+        some: {
+          userId: currentUser.id,
+        },
+      },
     },
   });
 

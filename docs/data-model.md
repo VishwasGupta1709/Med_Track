@@ -4,7 +4,7 @@
 
 ## Patient
 
-`Patient` is the root record for a person being tracked. It stores profile details and the current MVP ownership placeholder, `createdByUserId`.
+`Patient` is the root record for a person being tracked. It stores profile details and the transitional ownership field, `createdByUserId`.
 
 Relationships:
 
@@ -14,7 +14,7 @@ Relationships:
 - One patient has many follow-up appointments.
 - One patient can have many patient members.
 
-`createdByUserId` remains a plain string during the auth foundation transition. Future authorization rollout work should move route checks to `PatientMember`.
+`createdByUserId` remains a plain string during the authorization transition. For newly created patients, it is set to the creator's local `User.id`; access checks for patient list, patient detail, and patient creation now use `PatientMember`. Other feature routes are still being migrated.
 
 ## User
 
@@ -34,7 +34,7 @@ Important behavior:
 - `CAREGIVER`
 - `VIEWER`
 
-The full permission matrix is future work.
+Current permission helpers treat all roles as patient viewers, only `PRIMARY_CAREGIVER` as a patient editor, `PRIMARY_CAREGIVER` as the medicine manager, and `PRIMARY_CAREGIVER` plus `CAREGIVER` as dose/health trackers. Route-by-route enforcement is still being rolled out.
 
 ## PatientMember
 
@@ -44,7 +44,8 @@ Important behavior:
 
 - A patient/user pair is unique.
 - Deleting a patient or user cascades to related memberships.
-- Route-by-route enforcement is not complete yet; this model is the foundation for that rollout.
+- New patient creation creates a `PRIMARY_CAREGIVER` membership for the creator.
+- Route-by-route enforcement is not complete yet; medicine, schedule, dose, BP, and follow-up routes remain transitional until later rollout slices.
 
 ## Medicine
 

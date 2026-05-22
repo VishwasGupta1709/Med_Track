@@ -30,9 +30,13 @@ Use this checklist for browser-based MVP regression testing against the local Ne
 
 ## Patient Profile
 
+- Sign in before testing patient profile flows.
 - Patient can be created with required profile details.
+- Newly created patients appear for the signed-in user because creation also creates a `PRIMARY_CAREGIVER` membership.
 - Patient list shows the created patient.
 - Patient detail shows profile fields and navigation to dashboard, medicines, schedule, BP readings, and follow-ups.
+- A direct patient detail URL for a patient where the signed-in user has no membership shows 404.
+- Old demo patients appear only after claiming them for the Clerk user with `npm run claim:demo-data`.
 
 ## Medicine Tracking
 

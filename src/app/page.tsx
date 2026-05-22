@@ -2,11 +2,11 @@ import Link from "next/link";
 import { DashboardPatientCard } from "@/components/DashboardPatientCard";
 import { DashboardLatestBPCard } from "@/components/DashboardLatestBPCard";
 import { DueDoseAlert } from "@/components/DueDoseAlert";
+import { requireCurrentUser } from "@/lib/auth/current-user";
 import { DOSE_STATUS } from "@/lib/dose-status";
 import { prisma } from "@/lib/prisma";
 import { getTodayWindow } from "@/lib/schedule-generation";
 
-const DEMO_USER_ID = "demo-user";
 const DASHBOARD_STATUSES = [
   DOSE_STATUS.PENDING,
   DOSE_STATUS.DUE,
@@ -83,10 +83,17 @@ function formatTime(date: Date) {
 }
 
 export default async function DashboardPage() {
+  const currentUser = await requireCurrentUser();
   const now = new Date();
   const today = getTodayWindow(now);
   const patients = await prisma.patient.findMany({
-    where: { createdByUserId: DEMO_USER_ID },
+    where: {
+      members: {
+        some: {
+          userId: currentUser.id,
+        },
+      },
+    },
     include: {
       medicines: {
         where: { status: "ACTIVE" },
@@ -144,7 +151,7 @@ export default async function DashboardPage() {
       <header className="page-header">
         <div>
           <h1>Dashboard</h1>
-          <p>Today&apos;s medicine status for demo-user patients.</p>
+          <p>Today&apos;s medicine status for your family patients.</p>
         </div>
         <div className="header-actions">
           <Link className="secondary-button" href="/patients">

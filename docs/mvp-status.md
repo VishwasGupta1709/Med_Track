@@ -9,7 +9,8 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 ### Patient Profile
 
 - Create, list, and view patient profiles.
-- Patient ownership is scoped with the current `createdByUserId = "demo-user"` placeholder.
+- Authorization Rollout Slice 1 is complete for patient list, root dashboard patient summaries, patient detail, and patient create/detail APIs.
+- New patient creation sets `createdByUserId` to the local signed-in `User.id` and creates a `PRIMARY_CAREGIVER` `PatientMember` row.
 
 ### Medicine Tracking
 
@@ -52,7 +53,7 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 
 ## Not Implemented Yet
 
-- Full route-by-route patient-member authorization and family role permissions.
+- Full route-by-route patient-member authorization for medicine, schedule, dose, BP, and follow-up routes.
 - Production notification delivery.
 - Calendar integration.
 - BP reminder delivery.
@@ -67,8 +68,10 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 ## Current Limitations
 
 - Clerk auth foundation exists, with local `User` and `PatientMember` tables.
-- `createdByUserId = "demo-user"` is still used by many MVP routes as a transition placeholder.
-- Patient-related routes have signed-in middleware protection, but full API/page authorization must still be rolled out route by route.
+- Patient list/detail/create now use `PatientMember` membership checks.
+- `createdByUserId = "demo-user"` is still used by many non-patient-profile MVP routes as a transition placeholder.
+- Existing demo patients need to be claimed with `npm run claim:demo-data` before they appear for a signed-in local user.
+- Patient-related routes have signed-in middleware protection, but remaining API/page authorization must still be rolled out route by route.
 - The app is currently a local development MVP.
 - Local data is stored in local PostgreSQL and does not sync between machines.
 - There is no production deployment, production auth, or production notification service.
@@ -77,7 +80,7 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 ## Recommended Next Milestones
 
 - Plan follow-up delete or complete/cancelled status only after correction workflows are stable.
-- Roll out `PatientMember` authorization checks across patient pages and API routes.
+- Continue `PatientMember` authorization rollout across medicine, schedule, dose, BP, and follow-up pages and API routes.
 - Design reminder notification delivery with explicit caregiver-controlled setup.
 - Plan BP charts and reports after the manual tracking workflow stays stable.
 - Consider OCR only after manual medicine workflow, review, and confirmation flows are stable.

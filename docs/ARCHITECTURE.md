@@ -17,7 +17,7 @@ Route-level documentation should stay high-level here. The route files remain th
 
 - Server-rendered pages load patient-scoped data with Prisma or call internal API routes when that matches existing page behavior.
 - Client forms submit JSON to Next.js API routes.
-- API routes validate input, check current placeholder ownership, and persist through Prisma.
+- API routes validate input, check the route's current authorization boundary, and persist through Prisma.
 - Most workflows redirect back to list/detail pages after successful create or update.
 
 ## Data Access
@@ -33,7 +33,9 @@ Clerk is the authentication provider and answers who is signed in. MedTrack keep
 
 The auth foundation includes local `User`, `PatientRole`, and `PatientMember` records. `PatientMember` is the patient-scoped access table and is the intended authorization boundary for future route work.
 
-During the transition, `Patient.createdByUserId` remains a `String` and many MVP routes still check `createdByUserId = "demo-user"`. This is intentional for the foundation milestone only. Middleware provides signed-in protection for patient-related routes, but full route-by-route `PatientMember` authorization is still a follow-up milestone and must be enforced in server-rendered pages and API route handlers, not only in the UI or middleware.
+Authorization Rollout Slice 1 converts patient list, root dashboard patient summaries, patient detail, and patient create/detail APIs to `PatientMember` access. New patient creation now stores the creator's local `User.id` in `Patient.createdByUserId` and creates a `PatientMember` row with `PRIMARY_CAREGIVER`.
+
+During the transition, `Patient.createdByUserId` remains a `String` and many non-patient-profile MVP routes still check `createdByUserId = "demo-user"`. Middleware provides signed-in protection for patient-related routes, but remaining medicine, schedule, dose, BP, and follow-up routes still need route-by-route `PatientMember` authorization in future slices. Authorization must be enforced in server-rendered pages and API route handlers, not only in the UI or middleware.
 
 ## Validation And Business Helpers
 
