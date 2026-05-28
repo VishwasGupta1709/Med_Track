@@ -1,22 +1,37 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { PatientRole } from "@prisma/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const prismaMocks = vi.hoisted(() => ({
-  patientFindFirst: vi.fn(),
   followUpFindFirst: vi.fn(),
   followUpUpdate: vi.fn(),
 }));
 
+const authMocks = vi.hoisted(() => ({
+  getCurrentUser: vi.fn(),
+  getPatientMembership: vi.fn(),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    patient: {
-      findFirst: prismaMocks.patientFindFirst,
-    },
     followUp: {
       findFirst: prismaMocks.followUpFindFirst,
       update: prismaMocks.followUpUpdate,
     },
   },
 }));
+
+vi.mock("@/lib/auth/current-user", () => ({
+  getCurrentUser: authMocks.getCurrentUser,
+}));
+
+vi.mock("@/lib/auth/patient-access", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/patient-access")>();
+
+  return {
+    ...actual,
+    getPatientMembership: authMocks.getPatientMembership,
+  };
+});
 
 import { FOLLOW_UP_STATUS } from "@/lib/follow-up-validation";
 import { PATCH } from "./route";
@@ -46,31 +61,43 @@ function createContext(followUpId = "follow-up-1") {
   };
 }
 
+function mockSignedInUser() {
+  authMocks.getCurrentUser.mockResolvedValue({ id: "user-1" });
+}
+
+function mockMembership(role: PatientRole) {
+  authMocks.getPatientMembership.mockResolvedValue({
+    id: "membership-1",
+    patientId: "patient-1",
+    userId: "user-1",
+    role,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+}
+
 describe("edit follow-up route", () => {
+  beforeEach(() => {
+    mockSignedInUser();
+    mockMembership(PatientRole.PRIMARY_CAREGIVER);
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns 404 when the patient is missing or not owned", async () => {
-    prismaMocks.patientFindFirst.mockResolvedValueOnce(null);
+  it("returns 401 when the request is unauthenticated", async () => {
+    authMocks.getCurrentUser.mockResolvedValueOnce(null);
 
     const response = await PATCH(createRequest(), createContext());
 
-    expect(response.status).toBe(404);
-    expect(await response.json()).toEqual({ error: "Patient not found." });
-    expect(prismaMocks.patientFindFirst).toHaveBeenCalledWith({
-      where: {
-        id: "patient-1",
-        createdByUserId: "demo-user",
-      },
-      select: { id: true },
-    });
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Authentication required." });
     expect(prismaMocks.followUpFindFirst).not.toHaveBeenCalled();
     expect(prismaMocks.followUpUpdate).not.toHaveBeenCalled();
   });
 
-  it("returns 404 when the follow-up is missing or belongs to another patient", async () => {
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
+  it("returns 404 when the follow-up is missing", async () => {
     prismaMocks.followUpFindFirst.mockResolvedValueOnce(null);
 
     const response = await PATCH(createRequest(), createContext());
@@ -82,14 +109,63 @@ describe("edit follow-up route", () => {
         id: "follow-up-1",
         patientId: "patient-1",
       },
-      select: { id: true },
+      select: { id: true, patientId: true },
+    });
+    expect(authMocks.getPatientMembership).not.toHaveBeenCalled();
+    expect(prismaMocks.followUpUpdate).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the follow-up belongs to a different route patient", async () => {
+    prismaMocks.followUpFindFirst.mockResolvedValueOnce(null);
+
+    const response = await PATCH(createRequest(), createContext("other-follow-up"));
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "Follow-up not found." });
+    expect(prismaMocks.followUpFindFirst).toHaveBeenCalledWith({
+      where: {
+        id: "other-follow-up",
+        patientId: "patient-1",
+      },
+      select: { id: true, patientId: true },
     });
     expect(prismaMocks.followUpUpdate).not.toHaveBeenCalled();
   });
 
+  it("returns 404 when the signed-in user is not a member of the follow-up patient", async () => {
+    prismaMocks.followUpFindFirst.mockResolvedValueOnce({
+      id: "follow-up-1",
+      patientId: "patient-1",
+    });
+    authMocks.getPatientMembership.mockResolvedValueOnce(null);
+
+    const response = await PATCH(createRequest(), createContext());
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "Patient not found." });
+    expect(authMocks.getPatientMembership).toHaveBeenCalledWith("patient-1", "user-1");
+    expect(prismaMocks.followUpUpdate).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when VIEWER tries to edit a follow-up", async () => {
+    prismaMocks.followUpFindFirst.mockResolvedValueOnce({
+      id: "follow-up-1",
+      patientId: "patient-1",
+    });
+    mockMembership(PatientRole.VIEWER);
+
+    const response = await PATCH(createRequest(), createContext());
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "Forbidden." });
+    expect(prismaMocks.followUpUpdate).not.toHaveBeenCalled();
+  });
+
   it("returns 400 for invalid appointmentAt", async () => {
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
-    prismaMocks.followUpFindFirst.mockResolvedValueOnce({ id: "follow-up-1" });
+    prismaMocks.followUpFindFirst.mockResolvedValueOnce({
+      id: "follow-up-1",
+      patientId: "patient-1",
+    });
 
     const response = await PATCH(
       createRequest(createPayload({ appointmentAt: "not-a-date" })),
@@ -105,7 +181,59 @@ describe("edit follow-up route", () => {
     expect(prismaMocks.followUpUpdate).not.toHaveBeenCalled();
   });
 
-  it("updates valid editable fields", async () => {
+  it.each([PatientRole.PRIMARY_CAREGIVER, PatientRole.CAREGIVER])(
+    "allows %s to edit a follow-up",
+    async (role) => {
+      mockMembership(role);
+      const updatedFollowUp = {
+        id: "follow-up-1",
+        patientId: "patient-1",
+        appointmentAt: new Date("2026-05-16T10:45:00.000Z"),
+        doctorName: "Dr. Mehta",
+        hospitalName: "City Hospital",
+        reason: "Updated note",
+        notes: "Bring reports",
+        status: FOLLOW_UP_STATUS.UPCOMING,
+      };
+
+      prismaMocks.followUpFindFirst.mockResolvedValueOnce({
+        id: "follow-up-1",
+        patientId: "patient-1",
+      });
+      prismaMocks.followUpUpdate.mockResolvedValueOnce(updatedFollowUp);
+
+      const response = await PATCH(
+        createRequest(
+          createPayload({
+            appointmentAt: "2026-05-16T10:45",
+            doctorName: "Dr. Mehta",
+            hospitalName: "City Hospital",
+            reason: "Updated note",
+            notes: "Bring reports",
+          }),
+        ),
+        createContext(),
+      );
+
+      expect(response.status).toBe(200);
+      expect(prismaMocks.followUpUpdate).toHaveBeenCalledWith({
+        where: { id: "follow-up-1" },
+        data: {
+          appointmentAt: new Date("2026-05-16T10:45"),
+          doctorName: "Dr. Mehta",
+          hospitalName: "City Hospital",
+          reason: "Updated note",
+          notes: "Bring reports",
+        },
+      });
+      expect(await response.json()).toEqual({
+        ...updatedFollowUp,
+        appointmentAt: updatedFollowUp.appointmentAt.toISOString(),
+      });
+    },
+  );
+
+  it("updates only current editable fields", async () => {
     const updatedFollowUp = {
       id: "follow-up-1",
       patientId: "patient-1",
@@ -117,8 +245,10 @@ describe("edit follow-up route", () => {
       status: FOLLOW_UP_STATUS.UPCOMING,
     };
 
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
-    prismaMocks.followUpFindFirst.mockResolvedValueOnce({ id: "follow-up-1" });
+    prismaMocks.followUpFindFirst.mockResolvedValueOnce({
+      id: "follow-up-1",
+      patientId: "patient-1",
+    });
     prismaMocks.followUpUpdate.mockResolvedValueOnce(updatedFollowUp);
 
     const response = await PATCH(
@@ -152,8 +282,10 @@ describe("edit follow-up route", () => {
   });
 
   it("uses the route patient id and follow-up id in ownership and update checks", async () => {
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
-    prismaMocks.followUpFindFirst.mockResolvedValueOnce({ id: "follow-up-2" });
+    prismaMocks.followUpFindFirst.mockResolvedValueOnce({
+      id: "follow-up-2",
+      patientId: "patient-1",
+    });
     prismaMocks.followUpUpdate.mockResolvedValueOnce({
       id: "follow-up-2",
       patientId: "patient-1",
@@ -173,6 +305,7 @@ describe("edit follow-up route", () => {
           id: "follow-up-2",
           patientId: "patient-1",
         },
+        select: { id: true, patientId: true },
       }),
     );
     expect(prismaMocks.followUpUpdate).toHaveBeenCalledWith(
@@ -194,8 +327,10 @@ describe("edit follow-up route", () => {
       status: FOLLOW_UP_STATUS.UPCOMING,
     };
 
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
-    prismaMocks.followUpFindFirst.mockResolvedValueOnce({ id: "follow-up-1" });
+    prismaMocks.followUpFindFirst.mockResolvedValueOnce({
+      id: "follow-up-1",
+      patientId: "patient-1",
+    });
     prismaMocks.followUpUpdate.mockResolvedValueOnce(updatedFollowUp);
 
     const response = await PATCH(
@@ -223,8 +358,10 @@ describe("edit follow-up route", () => {
   });
 
   it("rejects unsupported status if sent", async () => {
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
-    prismaMocks.followUpFindFirst.mockResolvedValueOnce({ id: "follow-up-1" });
+    prismaMocks.followUpFindFirst.mockResolvedValueOnce({
+      id: "follow-up-1",
+      patientId: "patient-1",
+    });
 
     const response = await PATCH(
       createRequest(createPayload({ status: "DONE" })),
