@@ -4,6 +4,7 @@ import type { BPReading } from "@prisma/client";
 type BPReadingCardProps = {
   patientId: string;
   bpReading: BPReading;
+  canManageBPReadings: boolean;
 };
 
 function formatDateTime(date: Date) {
@@ -13,7 +14,7 @@ function formatDateTime(date: Date) {
   });
 }
 
-export function BPReadingCard({ patientId, bpReading }: BPReadingCardProps) {
+export function BPReadingCard({ patientId, bpReading, canManageBPReadings }: BPReadingCardProps) {
   return (
     <article className="bp-reading-card">
       <div className="medicine-card-header">
@@ -44,14 +45,16 @@ export function BPReadingCard({ patientId, bpReading }: BPReadingCardProps) {
 
       {bpReading.notes ? <p className="medicine-instructions">{bpReading.notes}</p> : null}
 
-      <div className="schedule-action-item">
-        <Link
-          className="secondary-button"
-          href={`/patients/${patientId}/bp-readings/${bpReading.id}/edit`}
-        >
-          Edit reading
-        </Link>
-      </div>
+      {canManageBPReadings ? (
+        <div className="schedule-action-item">
+          <Link
+            className="secondary-button"
+            href={`/patients/${patientId}/bp-readings/${bpReading.id}/edit`}
+          >
+            Edit reading
+          </Link>
+        </div>
+      ) : null}
     </article>
   );
 }

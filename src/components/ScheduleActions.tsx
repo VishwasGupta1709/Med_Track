@@ -8,6 +8,8 @@ import { ScheduleGenerateButton } from "@/components/ScheduleGenerateButton";
 
 type ScheduleActionsProps = {
   patientId: string;
+  canGenerateSchedule: boolean;
+  canProcessDoseStatuses: boolean;
 };
 
 type ScheduleActionFeedback = {
@@ -15,7 +17,11 @@ type ScheduleActionFeedback = {
   message: string;
 };
 
-export function ScheduleActions({ patientId }: ScheduleActionsProps) {
+export function ScheduleActions({
+  patientId,
+  canGenerateSchedule,
+  canProcessDoseStatuses,
+}: ScheduleActionsProps) {
   const [feedback, setFeedback] = useState<ScheduleActionFeedback | null>(null);
 
   function handleFeedback(nextFeedback: ScheduleActionFeedback | null) {
@@ -31,9 +37,15 @@ export function ScheduleActions({ patientId }: ScheduleActionsProps) {
       <Link className="secondary-button" href={`/patients/${patientId}`}>
         Back to patient
       </Link>
-      <ScheduleGenerateButton patientId={patientId} onFeedback={handleFeedback} />
-      <ProcessDueDosesButton patientId={patientId} onFeedback={handleFeedback} />
-      <ProcessMissedDosesButton patientId={patientId} onFeedback={handleFeedback} />
+      {canGenerateSchedule ? (
+        <ScheduleGenerateButton patientId={patientId} onFeedback={handleFeedback} />
+      ) : null}
+      {canProcessDoseStatuses ? (
+        <>
+          <ProcessDueDosesButton patientId={patientId} onFeedback={handleFeedback} />
+          <ProcessMissedDosesButton patientId={patientId} onFeedback={handleFeedback} />
+        </>
+      ) : null}
       {feedback ? (
         <p
           className={`${feedback.kind === "error" ? "form-error" : "form-success"} action-feedback`}

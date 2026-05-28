@@ -4,6 +4,7 @@ import { ACTIONABLE_DOSE_STATUSES } from "@/lib/dose-status";
 
 type DoseEventCardProps = {
   doseEvent: DoseEvent;
+  canManageDoseEvents: boolean;
 };
 
 function formatTime(date: Date) {
@@ -20,7 +21,7 @@ function formatDateTime(date: Date) {
   });
 }
 
-export function DoseEventCard({ doseEvent }: DoseEventCardProps) {
+export function DoseEventCard({ doseEvent, canManageDoseEvents }: DoseEventCardProps) {
   const canAct = (ACTIONABLE_DOSE_STATUSES as readonly string[]).includes(doseEvent.status);
 
   return (
@@ -121,7 +122,7 @@ export function DoseEventCard({ doseEvent }: DoseEventCardProps) {
           </dl>
         ) : null}
 
-        {canAct ? <DoseEventActions doseEventId={doseEvent.id} /> : null}
+        {canManageDoseEvents && canAct ? <DoseEventActions doseEventId={doseEvent.id} /> : null}
       </div>
     </article>
   );

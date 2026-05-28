@@ -15,6 +15,7 @@ const PATIENT_VIEW_ROLES = [
   PatientRole.CAREGIVER,
   PatientRole.VIEWER,
 ];
+const DOSE_MANAGE_ROLES = [PatientRole.PRIMARY_CAREGIVER, PatientRole.CAREGIVER];
 const MISSED_DOSE_DASHBOARD_LIMIT = 3;
 
 export const dynamic = "force-dynamic";
@@ -36,11 +37,13 @@ function DashboardDoseSection({
   title,
   emptyMessage,
   doseEvents,
+  canManageDoseEvents,
   children,
 }: {
   title: string;
   emptyMessage: string;
   doseEvents: Parameters<typeof DoseEventCard>[0]["doseEvent"][];
+  canManageDoseEvents: boolean;
   children?: ReactNode;
 }) {
   return (
@@ -55,7 +58,11 @@ function DashboardDoseSection({
       ) : (
         <div className="dose-list">
           {doseEvents.map((doseEvent) => (
-            <DoseEventCard key={doseEvent.id} doseEvent={doseEvent} />
+            <DoseEventCard
+              canManageDoseEvents={canManageDoseEvents}
+              key={doseEvent.id}
+              doseEvent={doseEvent}
+            />
           ))}
         </div>
       )}
@@ -115,6 +122,7 @@ export default async function PatientDashboardPage({ params }: PatientDashboardP
   const dashboardSummary = createPatientDashboardSummary(patientWithDoseEvents.doseEvents, now);
   const visibleMissedDoses = dashboardSummary.missedToday.slice(0, MISSED_DOSE_DASHBOARD_LIMIT);
   const hiddenMissedDoseCount = dashboardSummary.missedToday.length - visibleMissedDoses.length;
+  const canManageDoseEvents = hasPatientRole(membership.role, DOSE_MANAGE_ROLES);
 
   return (
     <main className="page dashboard-page">
@@ -176,11 +184,13 @@ export default async function PatientDashboardPage({ params }: PatientDashboardP
         title="Due now"
         emptyMessage="No doses need attention right now. Keep an eye on the next upcoming dose."
         doseEvents={dashboardSummary.dueNow}
+        canManageDoseEvents={canManageDoseEvents}
       />
       <DashboardDoseSection
         title="Missed today"
         emptyMessage="No missed doses today. Today's completed and upcoming doses are listed below."
         doseEvents={visibleMissedDoses}
+        canManageDoseEvents={canManageDoseEvents}
       >
         {hiddenMissedDoseCount > 0 ? (
           <div className="dashboard-compact-link">
@@ -200,16 +210,19 @@ export default async function PatientDashboardPage({ params }: PatientDashboardP
         doseEvents={
           dashboardSummary.nextUpcomingDose ? [dashboardSummary.nextUpcomingDose] : []
         }
+        canManageDoseEvents={canManageDoseEvents}
       />
       <DashboardDoseSection
         title="Completed today"
         emptyMessage="No completed doses yet today. Due doses can be marked taken when confirmed."
         doseEvents={dashboardSummary.completedToday}
+        canManageDoseEvents={canManageDoseEvents}
       />
       <DashboardDoseSection
         title="Skipped today"
         emptyMessage="No skipped doses today."
         doseEvents={dashboardSummary.skippedToday}
+        canManageDoseEvents={canManageDoseEvents}
       />
     </main>
   );

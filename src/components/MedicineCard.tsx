@@ -9,6 +9,7 @@ type MedicineWithTimings = Medicine & {
 type MedicineCardProps = {
   patientId: string;
   medicine: MedicineWithTimings;
+  canManageMedicines: boolean;
 };
 
 function formatDate(date: Date) {
@@ -26,7 +27,7 @@ function formatFrequency(frequency: string) {
   return frequency;
 }
 
-export function MedicineCard({ patientId, medicine }: MedicineCardProps) {
+export function MedicineCard({ patientId, medicine, canManageMedicines }: MedicineCardProps) {
   return (
     <article className="medicine-card">
       <div className="medicine-card-header">
@@ -77,20 +78,24 @@ export function MedicineCard({ patientId, medicine }: MedicineCardProps) {
 
       {medicine.instructions ? <p className="medicine-instructions">{medicine.instructions}</p> : null}
 
-      <div className="schedule-action-item">
-        <Link
-          className="secondary-button"
-          href={`/patients/${patientId}/medicines/${medicine.id}/edit`}
-        >
-          Edit medicine
-        </Link>
-      </div>
+      {canManageMedicines ? (
+        <>
+          <div className="schedule-action-item">
+            <Link
+              className="secondary-button"
+              href={`/patients/${patientId}/medicines/${medicine.id}/edit`}
+            >
+              Edit medicine
+            </Link>
+          </div>
 
-      <MedicineStopAction
-        patientId={patientId}
-        medicineId={medicine.id}
-        medicineStatus={medicine.status}
-      />
+          <MedicineStopAction
+            patientId={patientId}
+            medicineId={medicine.id}
+            medicineStatus={medicine.status}
+          />
+        </>
+      ) : null}
     </article>
   );
 }

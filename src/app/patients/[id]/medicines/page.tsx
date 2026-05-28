@@ -2,15 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PatientRole } from "@prisma/client";
 import { MedicineCard } from "@/components/MedicineCard";
-import { requireCurrentUser } from "@/lib/auth/current-user";
-import {
-  MANAGE_MEDICINE_ROLES,
-  PatientAccessError,
-  hasPatientRole,
-  requirePatientMembership,
-  VIEW_PATIENT_ROLES,
-} from "@/lib/auth/patient-access";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPatientMembership, hasPatientRole } from "@/lib/auth/patient-access";
 import { prisma } from "@/lib/prisma";
+
+const MEDICINE_VIEW_ROLES = [
+  PatientRole.PRIMARY_CAREGIVER,
+  PatientRole.CAREGIVER,
+  PatientRole.VIEWER,
+];
+const MEDICINE_MANAGE_ROLES = [PatientRole.PRIMARY_CAREGIVER];
 
 export const dynamic = "force-dynamic";
 
@@ -22,18 +23,16 @@ type PatientMedicinesPageProps = {
 
 export default async function PatientMedicinesPage({ params }: PatientMedicinesPageProps) {
   const { id } = await params;
-  const currentUser = await requireCurrentUser();
-  let role: PatientRole;
+  const user = await getCurrentUser();
 
-  try {
-    const membership = await requirePatientMembership(id, currentUser.id, VIEW_PATIENT_ROLES);
-    role = membership.role;
-  } catch (error) {
-    if (error instanceof PatientAccessError) {
-      notFound();
-    }
+  if (!user) {
+    notFound();
+  }
 
-    throw error;
+  const membership = await getPatientMembership(id, user.id);
+
+  if (!membership || !hasPatientRole(membership.role, MEDICINE_VIEW_ROLES)) {
+    notFound();
   }
 
   const patient = await prisma.patient.findUnique({
@@ -55,7 +54,7 @@ export default async function PatientMedicinesPage({ params }: PatientMedicinesP
     notFound();
   }
 
-  const canManageMedicines = hasPatientRole(role, MANAGE_MEDICINE_ROLES);
+  const canManageMedicines = hasPatientRole(membership.role, MEDICINE_MANAGE_ROLES);
 
   return (
     <main className="page">
@@ -94,7 +93,12 @@ export default async function PatientMedicinesPage({ params }: PatientMedicinesP
       ) : (
         <section className="medicine-list" aria-label="Medicine list">
           {patient.medicines.map((medicine) => (
-            <MedicineCard key={medicine.id} patientId={patient.id} medicine={medicine} />
+            <MedicineCard
+              canManageMedicines={canManageMedicines}
+              key={medicine.id}
+              patientId={patient.id}
+              medicine={medicine}
+            />
           ))}
         </section>
       )}

@@ -1,14 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PatientRole } from "@prisma/client";
 import { DoseEventCard } from "@/components/DoseEventCard";
 import { ScheduleActions } from "@/components/ScheduleActions";
 import { ScheduleGenerateButton } from "@/components/ScheduleGenerateButton";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPatientMembership, hasPatientRole } from "@/lib/auth/patient-access";
 import { DOSE_STATUS } from "@/lib/dose-status";
 import { prisma } from "@/lib/prisma";
 import { getTodayWindow } from "@/lib/schedule-generation";
 import { refreshTodayScheduleStatusesForPatient } from "@/lib/today-schedule-status-processing";
 
-const DEMO_USER_ID = "demo-user";
+const SCHEDULE_VIEW_ROLES = [
+  PatientRole.PRIMARY_CAREGIVER,
+  PatientRole.CAREGIVER,
+  PatientRole.VIEWER,
+];
+const SCHEDULE_GENERATE_ROLES = [PatientRole.PRIMARY_CAREGIVER];
+const DOSE_MANAGE_ROLES = [PatientRole.PRIMARY_CAREGIVER, PatientRole.CAREGIVER];
 
 export const dynamic = "force-dynamic";
 
@@ -30,11 +39,20 @@ const STATUS_ORDER = [
 export default async function PatientSchedulePage({ params }: PatientSchedulePageProps) {
   const { id } = await params;
   const today = getTodayWindow();
-  const patient = await prisma.patient.findFirst({
-    where: {
-      id,
-      createdByUserId: DEMO_USER_ID,
-    },
+  const user = await getCurrentUser();
+
+  if (!user) {
+    notFound();
+  }
+
+  const membership = await getPatientMembership(id, user.id);
+
+  if (!membership || !hasPatientRole(membership.role, SCHEDULE_VIEW_ROLES)) {
+    notFound();
+  }
+
+  const patient = await prisma.patient.findUnique({
+    where: { id },
     select: { id: true },
   });
 
@@ -47,7 +65,6 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
   const patientWithSchedule = await prisma.patient.findFirst({
     where: {
       id: patient.id,
-      createdByUserId: DEMO_USER_ID,
     },
     include: {
       doseEvents: {
@@ -70,6 +87,8 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
     status,
     doseEvents: patientWithSchedule.doseEvents.filter((doseEvent) => doseEvent.status === status),
   })).filter((group) => group.doseEvents.length > 0);
+  const canGenerateSchedule = hasPatientRole(membership.role, SCHEDULE_GENERATE_ROLES);
+  const canManageDoseEvents = hasPatientRole(membership.role, DOSE_MANAGE_ROLES);
 
   return (
     <main className="page">
@@ -78,7 +97,11 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
           <h1>Today&apos;s schedule</h1>
           <p>{patientWithSchedule.fullName}</p>
         </div>
-        <ScheduleActions patientId={patientWithSchedule.id} />
+        <ScheduleActions
+          canGenerateSchedule={canGenerateSchedule}
+          canProcessDoseStatuses={canManageDoseEvents}
+          patientId={patientWithSchedule.id}
+        />
       </header>
 
       {patientWithSchedule.doseEvents.length === 0 ? (
@@ -89,10 +112,14 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
             medicines and timings.
           </p>
           <div className="empty-state-actions">
-            <ScheduleGenerateButton patientId={patientWithSchedule.id} />
-            <Link className="primary-button" href={`/patients/${patientWithSchedule.id}/medicines/new`}>
-              Add medicine
-            </Link>
+            {canGenerateSchedule ? (
+              <>
+                <ScheduleGenerateButton patientId={patientWithSchedule.id} />
+                <Link className="primary-button" href={`/patients/${patientWithSchedule.id}/medicines/new`}>
+                  Add medicine
+                </Link>
+              </>
+            ) : null}
             <Link className="secondary-button" href={`/patients/${patientWithSchedule.id}`}>
               Back to patient
             </Link>
@@ -113,7 +140,11 @@ export default async function PatientSchedulePage({ params }: PatientSchedulePag
                 <h2>{group.status}</h2>
                 <div className="dose-list">
                   {group.doseEvents.map((doseEvent) => (
-                    <DoseEventCard key={doseEvent.id} doseEvent={doseEvent} />
+                    <DoseEventCard
+                      canManageDoseEvents={canManageDoseEvents}
+                      key={doseEvent.id}
+                      doseEvent={doseEvent}
+                    />
                   ))}
                 </div>
               </div>
