@@ -30,18 +30,27 @@ Use this checklist for browser-based MVP regression testing against the local Ne
 
 ## Patient Profile
 
-- Sign in before testing patient profile flows.
 - Patient can be created with required profile details.
-- Newly created patients appear for the signed-in user because creation also creates a `PRIMARY_CAREGIVER` membership.
-- Patient list shows the created patient.
+- Patient creation adds the creator as a `PRIMARY_CAREGIVER` patient member.
+- Patient list shows patients where the signed-in local user has a `PatientMember` row.
+- Legacy demo-user patients without `PatientMember` rows do not appear until claimed or backfilled.
 - Patient detail shows profile fields and navigation to dashboard, medicines, schedule, BP readings, and follow-ups.
-- A direct patient detail URL for a patient where the signed-in user has no membership shows 404.
-- Old demo patients appear only after claiming them for the Clerk user with `npm run claim:demo-data`.
+- Patient detail rejects access for signed-in users without a matching `PatientMember` row.
+
+## Authorization And Roles
+
+- Patient dashboard rejects access for signed-in users without a matching `PatientMember` row.
+- `PRIMARY_CAREGIVER` can manage patient-scoped medicine, schedule/dose, BP, and follow-up records.
+- `CAREGIVER` can manage schedule/dose, BP, and follow-up records but cannot create, edit, or stop medicines.
+- `VIEWER` can view patient-scoped records but cannot manage them.
+- Follow-up UI hides Add/Edit/manage actions for users who cannot manage follow-ups.
+- APIs still reject unauthorized manage attempts even if a user reaches an edit or action URL directly.
 
 ## Medicine Tracking
 
-- For a `PRIMARY_CAREGIVER` membership, medicine list loads and Add medicine is available.
 - Medicine can be added manually with one or more timings.
+- Medicine create/edit/stop actions are available to `PRIMARY_CAREGIVER`.
+- Medicine create/edit/stop actions are rejected for users without patient access or without manage permission.
 - Medicine frequency display shows caregiver-friendly text for numeric values such as `1` and `2`.
 - Frequency/timing mismatch shows a validation error.
 - Medicine edit opens, pre-fills existing values, preserves existing timing IDs, and saves changes.
@@ -51,7 +60,6 @@ Use this checklist for browser-based MVP regression testing against the local Ne
 - Existing historical dose events for removed timings are preserved.
 - No copy suggests which timing should be removed.
 - Edit submit button says `Save medicine`.
-- Optional role check: temporarily change the local `PatientMember` role to `CAREGIVER` or `VIEWER`; medicine list remains viewable, while add/edit/stop medicine requests are blocked. Restore `PRIMARY_CAREGIVER` afterward.
 
 ## Medicine Stop
 
@@ -69,8 +77,11 @@ Use this checklist for browser-based MVP regression testing against the local Ne
 - Patient with no medicines sees guidance to add medicines manually before generating a schedule.
 - Patient with medicines but no generated schedule sees Generate schedule, Add medicine, Back to patient, and Dashboard actions.
 - Schedule generation creates today's dose events.
+- Schedule generation is available to roles that can manage schedules.
+- Schedule generation is rejected for users without patient access or without manage permission.
 - Confirm taken marks an actionable dose as `TAKEN`.
 - Skip marks an actionable dose as `SKIPPED`.
+- Confirm and skip dose actions are rejected for users without patient access or without dose manage permission.
 - Today's schedule refreshes due/missed dose statuses before display.
 - Old pending doses do not stay visually stale.
 - Stopped medicine history explanation appears on dashboard and schedule pages.
@@ -85,6 +96,8 @@ Use this checklist for browser-based MVP regression testing against the local Ne
 ## BP Tracking
 
 - No BP readings empty state explains manual history and shows Add BP reading plus Back to patient.
+- BP reading create/edit actions are available to roles that can manage BP readings.
+- BP reading create/edit actions are rejected for users without patient access or without manage permission.
 - BP form labels include `mmHg`/`bpm` units and neutral helper copy.
 - Blank, invalid, and very large values show validation errors.
 - Valid reading without pulse or notes saves and appears in history.
@@ -96,6 +109,8 @@ Use this checklist for browser-based MVP regression testing against the local Ne
 ## Follow-Up Tracking
 
 - No follow-ups empty state explains that follow-up details can be recorded and shows Add follow-up plus Back to patient.
+- Follow-up create/edit actions are available to roles that can manage follow-ups.
+- Follow-up create/edit actions are hidden or rejected for users without patient access or without manage permission.
 - Follow-up form shows neutral helper copy and does not interpret appointment details.
 - Blank or invalid appointment date/time shows a validation error.
 - Valid appointment with only date/time saves and appears in the follow-up list.

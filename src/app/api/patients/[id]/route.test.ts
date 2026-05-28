@@ -1,52 +1,27 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
 import { PatientRole } from "@prisma/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const prismaMocks = vi.hoisted(() => ({
+  patientFindFirst: vi.fn(),
+}));
 
 const authMocks = vi.hoisted(() => ({
   getCurrentUser: vi.fn(),
 }));
 
-const patientAccessMocks = vi.hoisted(() => ({
-  requirePatientMembership: vi.fn(),
-}));
-
-const prismaMocks = vi.hoisted(() => ({
-  patientFindUnique: vi.fn(),
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    patient: {
+      findFirst: prismaMocks.patientFindFirst,
+    },
+  },
 }));
 
 vi.mock("@/lib/auth/current-user", () => ({
   getCurrentUser: authMocks.getCurrentUser,
 }));
 
-vi.mock("@/lib/auth/patient-access", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/auth/patient-access")>();
-
-  return {
-    ...actual,
-    requirePatientMembership: patientAccessMocks.requirePatientMembership,
-  };
-});
-
-vi.mock("@/lib/prisma", () => ({
-  prisma: {
-    patient: {
-      findUnique: prismaMocks.patientFindUnique,
-    },
-  },
-}));
-
-import { VIEW_PATIENT_ROLES } from "@/lib/auth/patient-access";
 import { GET } from "./route";
-
-function createCurrentUser() {
-  return {
-    id: "local-user-1",
-    clerkUserId: "clerk-user-1",
-    email: "caregiver@example.com",
-    displayName: "Care Giver",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-}
 
 function createRequest() {
   return new Request("http://localhost/api/patients/patient-1", {
@@ -60,73 +35,75 @@ function createContext() {
   };
 }
 
+function mockSignedInUser(role: PatientRole = PatientRole.PRIMARY_CAREGIVER) {
+  authMocks.getCurrentUser.mockResolvedValue({ id: "user-1", role });
+}
+
 describe("patient detail route", () => {
+  beforeEach(() => {
+    mockSignedInUser();
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns 401 when unauthenticated", async () => {
+  it("returns 401 when the request is unauthenticated", async () => {
     authMocks.getCurrentUser.mockResolvedValueOnce(null);
 
     const response = await GET(createRequest(), createContext());
 
     expect(response.status).toBe(401);
     expect(await response.json()).toEqual({ error: "Authentication required." });
-    expect(patientAccessMocks.requirePatientMembership).not.toHaveBeenCalled();
-    expect(prismaMocks.patientFindUnique).not.toHaveBeenCalled();
+    expect(prismaMocks.patientFindFirst).not.toHaveBeenCalled();
   });
 
-  it("returns 404 when the patient is missing or the user is not a member", async () => {
-    authMocks.getCurrentUser.mockResolvedValueOnce(createCurrentUser());
-    patientAccessMocks.requirePatientMembership.mockRejectedValueOnce(
-      new Error("Patient access required."),
-    );
+  it("returns 404 when the patient is missing", async () => {
+    prismaMocks.patientFindFirst.mockResolvedValueOnce(null);
 
     const response = await GET(createRequest(), createContext());
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "Patient not found." });
-    expect(patientAccessMocks.requirePatientMembership).toHaveBeenCalledWith(
-      "patient-1",
-      "local-user-1",
-      VIEW_PATIENT_ROLES,
-    );
-    expect(prismaMocks.patientFindUnique).not.toHaveBeenCalled();
   });
 
-  it("returns patient data for a member", async () => {
-    const patient = {
-      id: "patient-1",
-      fullName: "Asha Rao",
-      age: 72,
-      relationship: "Mother",
-      phoneNumber: "555-0101",
-      notes: null,
-      createdByUserId: "local-user-1",
-      createdAt: new Date("2026-05-16T10:30:00.000Z"),
-      updatedAt: new Date("2026-05-16T10:30:00.000Z"),
-    };
-    authMocks.getCurrentUser.mockResolvedValueOnce(createCurrentUser());
-    patientAccessMocks.requirePatientMembership.mockResolvedValueOnce({
-      id: "membership-1",
-      patientId: "patient-1",
-      userId: "local-user-1",
-      role: PatientRole.VIEWER,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    prismaMocks.patientFindUnique.mockResolvedValueOnce(patient);
+  it("returns 404 when the signed-in user is not a member of an existing patient", async () => {
+    prismaMocks.patientFindFirst.mockResolvedValueOnce(null);
 
     const response = await GET(createRequest(), createContext());
 
-    expect(response.status).toBe(200);
-    expect(prismaMocks.patientFindUnique).toHaveBeenCalledWith({
-      where: { id: "patient-1" },
-    });
-    expect(await response.json()).toEqual({
-      ...patient,
-      createdAt: patient.createdAt.toISOString(),
-      updatedAt: patient.updatedAt.toISOString(),
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "Patient not found." });
+    expect(prismaMocks.patientFindFirst).toHaveBeenCalledWith({
+      where: {
+        id: "patient-1",
+        members: {
+          some: {
+            userId: "user-1",
+          },
+        },
+      },
     });
   });
+
+  it.each([PatientRole.PRIMARY_CAREGIVER, PatientRole.CAREGIVER, PatientRole.VIEWER])(
+    "allows %s to view a patient when they are a member",
+    async (role) => {
+      mockSignedInUser(role);
+      const patient = {
+        id: "patient-1",
+        fullName: "Asha Rao",
+        createdAt: new Date("2026-05-16T10:30:00.000Z"),
+      };
+      prismaMocks.patientFindFirst.mockResolvedValueOnce(patient);
+
+      const response = await GET(createRequest(), createContext());
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        ...patient,
+        createdAt: patient.createdAt.toISOString(),
+      });
+    },
+  );
 });

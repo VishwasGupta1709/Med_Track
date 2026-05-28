@@ -17,7 +17,7 @@ Route-level documentation should stay high-level here. The route files remain th
 
 - Server-rendered pages load patient-scoped data with Prisma or call internal API routes when that matches existing page behavior.
 - Client forms submit JSON to Next.js API routes.
-- API routes validate input, check the route's current authorization boundary, and persist through Prisma.
+- API routes validate input, check `PatientMember` authorization, and persist through Prisma.
 - Most workflows redirect back to list/detail pages after successful create or update.
 
 ## Data Access
@@ -31,13 +31,17 @@ Route-level documentation should stay high-level here. The route files remain th
 
 Clerk is the authentication provider and answers who is signed in. MedTrack keeps authorization in local Prisma tables so the database can answer which patient a user can access and what role they have for that patient.
 
-The auth foundation includes local `User`, `PatientRole`, and `PatientMember` records. `PatientMember` is the patient-scoped access table and is the intended authorization boundary for future route work.
+The auth foundation includes local `User`, `PatientRole`, and `PatientMember` records. `PatientMember` is the patient-scoped access table and the main authorization boundary for core MVP route and page work.
 
-Authorization Rollout Slice 1 converts patient list, root dashboard patient summaries, patient detail, and patient create/detail APIs to `PatientMember` access. New patient creation now stores the creator's local `User.id` in `Patient.createdByUserId` and creates a `PatientMember` row with `PRIMARY_CAREGIVER`.
+Role behavior:
 
-Authorization Rollout Slice 2 converts medicine list/add/edit/stop pages and APIs to `PatientMember` access. All patient roles can view medicines. Only `PRIMARY_CAREGIVER` can add, edit, or stop medicines.
+- `PRIMARY_CAREGIVER` is assigned to the creator when a patient is created and can manage patient-scoped records, including medicine create/edit/stop actions.
+- `CAREGIVER` can manage schedule/dose, BP, and follow-up records but cannot create, edit, or stop medicines.
+- `VIEWER` can view patient-scoped records but cannot manage them. UI pages hide edit/manage actions for follow-ups when the signed-in user cannot manage follow-ups, and APIs still enforce permissions server-side.
 
-During the transition, `Patient.createdByUserId` remains a `String` and many non-patient-profile/non-medicine MVP routes still check `createdByUserId = "demo-user"`. Middleware provides signed-in protection for patient-related routes, but remaining schedule, dose, BP, and follow-up routes still need route-by-route `PatientMember` authorization in future slices. Authorization must be enforced in server-rendered pages and API route handlers, not only in the UI or middleware.
+Membership-protected domains now include patient list/detail/dashboard pages, patient APIs, medicine APIs, schedule and dose event APIs, BP reading APIs, follow-up APIs, and follow-up UI pages/components.
+
+`Patient.createdByUserId` remains legacy ownership metadata for local/demo data migration support. It must not be used as the authorization source for new route or page work. Legacy local patients without `PatientMember` rows will not appear for signed-in users until they are claimed or backfilled into membership rows.
 
 ## Validation And Business Helpers
 

@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/current-user";
-import {
-  MANAGE_MEDICINE_ROLES,
-  PatientAccessError,
-  requirePatientMembership,
-  VIEW_PATIENT_ROLES,
-} from "@/lib/auth/patient-access";
+import { PatientRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPatientMembership, hasPatientRole } from "@/lib/auth/patient-access";
 import {
   MedicineInput,
   MedicineTimingInput,
   parseDateInput,
   validateMedicineInput,
 } from "@/lib/medicine-validation";
+
+const MEDICINE_MUTATION_ROLES = [PatientRole.PRIMARY_CAREGIVER];
 
 type RouteContext = {
   params: Promise<{
@@ -70,37 +68,38 @@ function normalizeMedicineBody(body: unknown): MedicineInput {
   };
 }
 
-async function authorizePatient(patientId: string, allowedRoles: Parameters<typeof requirePatientMembership>[2]) {
-  const currentUser = await getCurrentUser();
+async function authorizeMedicineAccess(patientId: string, requireMutation = false) {
+  const user = await getCurrentUser();
 
-  if (!currentUser) {
+  if (!user) {
     return {
-      response: NextResponse.json({ error: "Authentication required." }, { status: 401 }),
+      error: NextResponse.json({ error: "Authentication required." }, { status: 401 }),
     };
   }
 
-  try {
-    await requirePatientMembership(patientId, currentUser.id, allowedRoles);
-    return {};
-  } catch (error) {
-    if (error instanceof PatientAccessError && error.code === "PATIENT_ROLE_REQUIRED") {
-      return {
-        response: NextResponse.json({ error: "Patient access forbidden." }, { status: 403 }),
-      };
-    }
+  const membership = await getPatientMembership(patientId, user.id);
 
+  if (!membership) {
     return {
-      response: NextResponse.json({ error: "Patient not found." }, { status: 404 }),
+      error: NextResponse.json({ error: "Patient not found." }, { status: 404 }),
     };
   }
+
+  if (requireMutation && !hasPatientRole(membership.role, MEDICINE_MUTATION_ROLES)) {
+    return {
+      error: NextResponse.json({ error: "Forbidden." }, { status: 403 }),
+    };
+  }
+
+  return { membership };
 }
 
 export async function GET(_request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const authorization = await authorizePatient(id, VIEW_PATIENT_ROLES);
+  const access = await authorizeMedicineAccess(id);
 
-  if (authorization.response) {
-    return authorization.response;
+  if ("error" in access) {
+    return access.error;
   }
 
   const medicines = await prisma.medicine.findMany({
@@ -118,10 +117,10 @@ export async function GET(_request: Request, context: RouteContext) {
 
 export async function POST(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const authorization = await authorizePatient(id, MANAGE_MEDICINE_ROLES);
+  const access = await authorizeMedicineAccess(id, true);
 
-  if (authorization.response) {
-    return authorization.response;
+  if ("error" in access) {
+    return access.error;
   }
 
   const input = normalizeMedicineBody(await request.json().catch(() => null));

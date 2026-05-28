@@ -1,9 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PatientRole } from "@prisma/client";
 import { FollowUpForm } from "@/components/FollowUpForm";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPatientMembership, hasPatientRole } from "@/lib/auth/patient-access";
 import { prisma } from "@/lib/prisma";
 
-const DEMO_USER_ID = "demo-user";
+const FOLLOW_UP_MANAGE_ROLES = [PatientRole.PRIMARY_CAREGIVER, PatientRole.CAREGIVER];
 
 type NewFollowUpPageProps = {
   params: Promise<{
@@ -13,12 +16,19 @@ type NewFollowUpPageProps = {
 
 export default async function NewFollowUpPage({ params }: NewFollowUpPageProps) {
   const { id } = await params;
-  const patient = await prisma.patient.findFirst({
-    where: {
-      id,
-      createdByUserId: DEMO_USER_ID,
-    },
-  });
+  const user = await getCurrentUser();
+
+  if (!user) {
+    notFound();
+  }
+
+  const membership = await getPatientMembership(id, user.id);
+
+  if (!membership || !hasPatientRole(membership.role, FOLLOW_UP_MANAGE_ROLES)) {
+    notFound();
+  }
+
+  const patient = await prisma.patient.findUnique({ where: { id } });
 
   if (!patient) {
     notFound();

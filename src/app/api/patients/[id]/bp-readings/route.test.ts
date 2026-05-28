@@ -1,22 +1,37 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { PatientRole } from "@prisma/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const prismaMocks = vi.hoisted(() => ({
-  patientFindFirst: vi.fn(),
   bpReadingFindMany: vi.fn(),
   bpReadingCreate: vi.fn(),
 }));
 
+const authMocks = vi.hoisted(() => ({
+  getCurrentUser: vi.fn(),
+  getPatientMembership: vi.fn(),
+}));
+
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    patient: {
-      findFirst: prismaMocks.patientFindFirst,
-    },
     bPReading: {
       findMany: prismaMocks.bpReadingFindMany,
       create: prismaMocks.bpReadingCreate,
     },
   },
 }));
+
+vi.mock("@/lib/auth/current-user", () => ({
+  getCurrentUser: authMocks.getCurrentUser,
+}));
+
+vi.mock("@/lib/auth/patient-access", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/patient-access")>();
+
+  return {
+    ...actual,
+    getPatientMembership: authMocks.getPatientMembership,
+  };
+});
 
 import { GET, POST } from "./route";
 
@@ -51,31 +66,139 @@ function createContext() {
   };
 }
 
+function mockSignedInUser() {
+  authMocks.getCurrentUser.mockResolvedValue({ id: "user-1" });
+}
+
+function mockMembership(role: PatientRole) {
+  authMocks.getPatientMembership.mockResolvedValue({
+    id: "membership-1",
+    patientId: "patient-1",
+    userId: "user-1",
+    role,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+}
+
 describe("BP readings route", () => {
+  beforeEach(() => {
+    mockSignedInUser();
+    mockMembership(PatientRole.PRIMARY_CAREGIVER);
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns 404 on POST when the patient is missing or not owned", async () => {
-    prismaMocks.patientFindFirst.mockResolvedValueOnce(null);
+  it.each([
+    ["GET", GET, createGetRequest()],
+    ["POST", POST, createPostRequest()],
+  ] as const)("returns 401 on %s when the request is unauthenticated", async (_method, handler, request) => {
+    authMocks.getCurrentUser.mockResolvedValueOnce(null);
 
-    const response = await POST(createPostRequest(), createContext());
+    const response = await handler(request, createContext());
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Authentication required." });
+    expect(authMocks.getPatientMembership).not.toHaveBeenCalled();
+    expect(prismaMocks.bpReadingFindMany).not.toHaveBeenCalled();
+    expect(prismaMocks.bpReadingCreate).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["GET", GET, createGetRequest()],
+    ["POST", POST, createPostRequest()],
+  ] as const)("returns 404 on %s when the signed-in user is not a patient member", async (_method, handler, request) => {
+    authMocks.getPatientMembership.mockResolvedValueOnce(null);
+
+    const response = await handler(request, createContext());
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: "Patient not found." });
-    expect(prismaMocks.patientFindFirst).toHaveBeenCalledWith({
-      where: {
-        id: "patient-1",
-        createdByUserId: "demo-user",
-      },
-      select: { id: true },
-    });
+    expect(prismaMocks.bpReadingFindMany).not.toHaveBeenCalled();
+    expect(prismaMocks.bpReadingCreate).not.toHaveBeenCalled();
+  });
+
+  it.each([PatientRole.PRIMARY_CAREGIVER, PatientRole.CAREGIVER, PatientRole.VIEWER])(
+    "allows %s to list BP readings",
+    async (role) => {
+      mockMembership(role);
+      const readings = [
+        {
+          id: "bp-1",
+          patientId: "patient-1",
+          systolic: 120,
+          diastolic: 80,
+          pulse: null,
+          measuredAt: new Date("2026-05-16T10:30:00.000Z"),
+          notes: null,
+        },
+      ];
+      prismaMocks.bpReadingFindMany.mockResolvedValueOnce(readings);
+
+      const response = await GET(createGetRequest(), createContext());
+
+      expect(response.status).toBe(200);
+      expect(prismaMocks.bpReadingFindMany).toHaveBeenCalledWith({
+        where: { patientId: "patient-1" },
+        orderBy: { measuredAt: "desc" },
+      });
+      expect(await response.json()).toEqual([
+        {
+          ...readings[0],
+          measuredAt: readings[0].measuredAt.toISOString(),
+        },
+      ]);
+    },
+  );
+
+  it.each([PatientRole.PRIMARY_CAREGIVER, PatientRole.CAREGIVER])(
+    "allows %s to create a BP reading",
+    async (role) => {
+      mockMembership(role);
+      const createdReading = {
+        id: "bp-1",
+        patientId: "patient-1",
+        systolic: 120,
+        diastolic: 80,
+        pulse: 72,
+        measuredAt: new Date("2026-05-16T10:30:00.000Z"),
+        notes: "Care note",
+      };
+      prismaMocks.bpReadingCreate.mockResolvedValueOnce(createdReading);
+
+      const response = await POST(createPostRequest(), createContext());
+
+      expect(response.status).toBe(201);
+      expect(prismaMocks.bpReadingCreate).toHaveBeenCalledWith({
+        data: {
+          patientId: "patient-1",
+          systolic: 120,
+          diastolic: 80,
+          pulse: 72,
+          measuredAt: new Date("2026-05-16T10:30"),
+          notes: "Care note",
+        },
+      });
+      expect(await response.json()).toEqual({
+        ...createdReading,
+        measuredAt: createdReading.measuredAt.toISOString(),
+      });
+    },
+  );
+
+  it("returns 403 when VIEWER tries to create a BP reading", async () => {
+    mockMembership(PatientRole.VIEWER);
+
+    const response = await POST(createPostRequest(), createContext());
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: "Forbidden." });
     expect(prismaMocks.bpReadingCreate).not.toHaveBeenCalled();
   });
 
   it("returns 400 on POST for invalid BP input", async () => {
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
-
     const response = await POST(createPostRequest(createPayload({ systolic: "301" })), createContext());
 
     expect(response.status).toBe(400);
@@ -87,7 +210,7 @@ describe("BP readings route", () => {
     expect(prismaMocks.bpReadingCreate).not.toHaveBeenCalled();
   });
 
-  it("creates a BP reading for valid input and uses the route patient id", async () => {
+  it("creates a BP reading using the route patient id", async () => {
     const createdReading = {
       id: "bp-1",
       patientId: "patient-1",
@@ -98,7 +221,6 @@ describe("BP readings route", () => {
       notes: "Care note",
     };
 
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
     prismaMocks.bpReadingCreate.mockResolvedValueOnce(createdReading);
 
     const response = await POST(createPostRequest(), createContext());
@@ -118,46 +240,5 @@ describe("BP readings route", () => {
       ...createdReading,
       measuredAt: createdReading.measuredAt.toISOString(),
     });
-  });
-
-  it("returns 404 on GET when the patient is missing or not owned", async () => {
-    prismaMocks.patientFindFirst.mockResolvedValueOnce(null);
-
-    const response = await GET(createGetRequest(), createContext());
-
-    expect(response.status).toBe(404);
-    expect(await response.json()).toEqual({ error: "Patient not found." });
-    expect(prismaMocks.bpReadingFindMany).not.toHaveBeenCalled();
-  });
-
-  it("verifies ownership and queries BP readings newest-first on GET", async () => {
-    const readings = [
-      {
-        id: "bp-1",
-        patientId: "patient-1",
-        systolic: 120,
-        diastolic: 80,
-        pulse: null,
-        measuredAt: new Date("2026-05-16T10:30:00.000Z"),
-        notes: null,
-      },
-    ];
-
-    prismaMocks.patientFindFirst.mockResolvedValueOnce({ id: "patient-1" });
-    prismaMocks.bpReadingFindMany.mockResolvedValueOnce(readings);
-
-    const response = await GET(createGetRequest(), createContext());
-
-    expect(response.status).toBe(200);
-    expect(prismaMocks.bpReadingFindMany).toHaveBeenCalledWith({
-      where: { patientId: "patient-1" },
-      orderBy: { measuredAt: "desc" },
-    });
-    expect(await response.json()).toEqual([
-      {
-        ...readings[0],
-        measuredAt: readings[0].measuredAt.toISOString(),
-      },
-    ]);
   });
 });

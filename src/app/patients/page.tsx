@@ -1,17 +1,32 @@
 import Link from "next/link";
 import { PatientCard } from "@/components/PatientCard";
-import { requireCurrentUser } from "@/lib/auth/current-user";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function PatientsPage() {
-  const currentUser = await requireCurrentUser();
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return (
+      <main className="page">
+        <section className="empty-state">
+          <h1>Patients</h1>
+          <p>Sign in to view patient profiles.</p>
+          <Link className="primary-button" href="/sign-in">
+            Sign in
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   const patients = await prisma.patient.findMany({
     where: {
       members: {
         some: {
-          userId: currentUser.id,
+          userId: user.id,
         },
       },
     },

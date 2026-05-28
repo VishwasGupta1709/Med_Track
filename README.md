@@ -16,7 +16,15 @@ MedTrack is for recording, reminders, tracking, and family coordination only. It
 - Vitest
 - npm for scripts and dependencies
 
-Authentication is provided by Clerk. MedTrack authorization is being introduced in local Prisma tables with `User` and `PatientMember`. During the auth foundation transition, many MVP routes still use `createdByUserId = "demo-user"` as a legacy placeholder until the route-by-route authorization rollout is completed.
+Authentication is provided by Clerk. MedTrack authorization is enforced through local Prisma `User` and `PatientMember` records. `PatientMember` is now the main patient-scoped authorization model for core MVP APIs and pages.
+
+Patient roles:
+
+- `PRIMARY_CAREGIVER`: created for the patient creator and allowed to manage patient-scoped records.
+- `CAREGIVER`: allowed to manage patient-scoped medicine, schedule/dose, BP, and follow-up records.
+- `VIEWER`: allowed to view patient-scoped records, with edit/manage actions hidden or rejected.
+
+Membership protection now covers patients, medicines, schedule and dose events, BP readings, and follow-ups. `createdByUserId` remains legacy ownership metadata and must not be used as the authorization source for new route or page work.
 
 ## Current MVP Features
 
@@ -38,7 +46,7 @@ Authentication is provided by Clerk. MedTrack authorization is being introduced 
 
 ## Current Limitations
 
-- Auth foundation exists, but full patient-member authorization is not enforced across every route yet.
+- Core MVP patient, medicine, schedule/dose, BP, and follow-up APIs/pages are protected with `PatientMember` authorization.
 - No production notification delivery yet.
 - No BP reminder or follow-up reminder delivery yet.
 - No calendar integration.
@@ -170,6 +178,8 @@ $env:CLERK_USER_DISPLAY_NAME="Caregiver Name"
 ```
 
 This creates local `PatientMember` rows for patients with `createdByUserId = "demo-user"`. It does not change patient medical data or print patient details.
+
+Legacy local patients without `PatientMember` rows will not appear in the signed-in patient list and patient pages/APIs will reject access until those rows are claimed or backfilled.
 
 Open Prisma Studio:
 

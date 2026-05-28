@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
+import { PatientRole } from "@prisma/client";
 import {
   BPReadingInput,
   parseDateTimeInput,
   validateBPReadingInput,
 } from "@/lib/bp-reading-validation";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPatientMembership, hasPatientRole } from "@/lib/auth/patient-access";
 import { prisma } from "@/lib/prisma";
 
-const DEMO_USER_ID = "demo-user";
+const BP_WRITE_ROLES = [PatientRole.PRIMARY_CAREGIVER, PatientRole.CAREGIVER];
 
 type RouteContext = {
   params: Promise<{
@@ -42,17 +45,10 @@ function normalizeBPReadingBody(body: unknown): BPReadingInput {
 
 export async function PATCH(request: Request, context: RouteContext) {
   const { id, readingId } = await context.params;
+  const user = await getCurrentUser();
 
-  const patient = await prisma.patient.findFirst({
-    where: {
-      id,
-      createdByUserId: DEMO_USER_ID,
-    },
-    select: { id: true },
-  });
-
-  if (!patient) {
-    return NextResponse.json({ error: "Patient not found." }, { status: 404 });
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
   const bpReading = await prisma.bPReading.findFirst({
@@ -60,11 +56,21 @@ export async function PATCH(request: Request, context: RouteContext) {
       id: readingId,
       patientId: id,
     },
-    select: { id: true },
+    select: { id: true, patientId: true },
   });
 
   if (!bpReading) {
     return NextResponse.json({ error: "BP reading not found." }, { status: 404 });
+  }
+
+  const membership = await getPatientMembership(bpReading.patientId, user.id);
+
+  if (!membership) {
+    return NextResponse.json({ error: "BP reading not found." }, { status: 404 });
+  }
+
+  if (!hasPatientRole(membership.role, BP_WRITE_ROLES)) {
+    return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   }
 
   const input = normalizeBPReadingBody(await request.json().catch(() => null));

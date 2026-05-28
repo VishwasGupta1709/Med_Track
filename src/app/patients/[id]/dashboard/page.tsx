@@ -1,13 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PatientRole } from "@prisma/client";
 import type { ReactNode } from "react";
 import { DoseEventCard } from "@/components/DoseEventCard";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPatientMembership, hasPatientRole } from "@/lib/auth/patient-access";
 import { createPatientDashboardSummary } from "@/lib/patient-dashboard-summary";
 import { prisma } from "@/lib/prisma";
 import { getTodayWindow } from "@/lib/schedule-generation";
 import { refreshTodayScheduleStatusesForPatient } from "@/lib/today-schedule-status-processing";
 
-const DEMO_USER_ID = "demo-user";
+const PATIENT_VIEW_ROLES = [
+  PatientRole.PRIMARY_CAREGIVER,
+  PatientRole.CAREGIVER,
+  PatientRole.VIEWER,
+];
 const MISSED_DOSE_DASHBOARD_LIMIT = 3;
 
 export const dynamic = "force-dynamic";
@@ -59,13 +66,22 @@ function DashboardDoseSection({
 
 export default async function PatientDashboardPage({ params }: PatientDashboardPageProps) {
   const { id } = await params;
+  const user = await getCurrentUser();
+
+  if (!user) {
+    notFound();
+  }
+
+  const membership = await getPatientMembership(id, user.id);
+
+  if (!membership || !hasPatientRole(membership.role, PATIENT_VIEW_ROLES)) {
+    notFound();
+  }
+
   const now = new Date();
   const today = getTodayWindow(now);
-  const patient = await prisma.patient.findFirst({
-    where: {
-      id,
-      createdByUserId: DEMO_USER_ID,
-    },
+  const patient = await prisma.patient.findUnique({
+    where: { id },
     select: { id: true },
   });
 
@@ -78,7 +94,6 @@ export default async function PatientDashboardPage({ params }: PatientDashboardP
   const patientWithDoseEvents = await prisma.patient.findFirst({
     where: {
       id: patient.id,
-      createdByUserId: DEMO_USER_ID,
     },
     include: {
       doseEvents: {

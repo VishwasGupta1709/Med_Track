@@ -25,9 +25,9 @@ function normalizePatientBody(body: unknown) {
 }
 
 export async function GET() {
-  const currentUser = await getCurrentUser();
+  const user = await getCurrentUser();
 
-  if (!currentUser) {
+  if (!user) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
@@ -35,7 +35,7 @@ export async function GET() {
     where: {
       members: {
         some: {
-          userId: currentUser.id,
+          userId: user.id,
         },
       },
     },
@@ -46,9 +46,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentUser();
+  const user = await getCurrentUser();
 
-  if (!currentUser) {
+  if (!user) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
@@ -63,14 +63,14 @@ export async function POST(request: Request) {
     const createdPatient = await tx.patient.create({
       data: {
         ...input,
-        createdByUserId: currentUser.id,
+        createdByUserId: user.id,
       },
     });
 
     await tx.patientMember.create({
       data: {
         patientId: createdPatient.id,
-        userId: currentUser.id,
+        userId: user.id,
         role: PatientRole.PRIMARY_CAREGIVER,
       },
     });

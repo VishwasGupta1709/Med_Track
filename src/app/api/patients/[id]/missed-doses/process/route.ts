@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { PatientRole } from "@prisma/client";
 import { processMissedDosesForPatient } from "@/lib/missed-dose-processing";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPatientMembership, hasPatientRole } from "@/lib/auth/patient-access";
 import { prisma } from "@/lib/prisma";
 
-const DEMO_USER_ID = "demo-user";
+const DOSE_PROCESS_ROLES = [PatientRole.PRIMARY_CAREGIVER, PatientRole.CAREGIVER];
 
 type RouteContext = {
   params: Promise<{
@@ -10,19 +13,38 @@ type RouteContext = {
   }>;
 };
 
+async function authorizeDoseProcessing(patientId: string) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return {
+      error: NextResponse.json({ error: "Authentication required." }, { status: 401 }),
+    };
+  }
+
+  const membership = await getPatientMembership(patientId, user.id);
+
+  if (!membership) {
+    return {
+      error: NextResponse.json({ error: "Patient not found." }, { status: 404 }),
+    };
+  }
+
+  if (!hasPatientRole(membership.role, DOSE_PROCESS_ROLES)) {
+    return {
+      error: NextResponse.json({ error: "Forbidden." }, { status: 403 }),
+    };
+  }
+
+  return { membership };
+}
+
 export async function POST(_request: Request, context: RouteContext) {
   const { id } = await context.params;
+  const access = await authorizeDoseProcessing(id);
 
-  const patient = await prisma.patient.findFirst({
-    where: {
-      id,
-      createdByUserId: DEMO_USER_ID,
-    },
-    select: { id: true },
-  });
-
-  if (!patient) {
-    return NextResponse.json({ error: "Patient not found." }, { status: 404 });
+  if ("error" in access) {
+    return access.error;
   }
 
   const result = await processMissedDosesForPatient(prisma, id);

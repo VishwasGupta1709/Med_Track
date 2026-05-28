@@ -1,9 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PatientRole } from "@prisma/client";
 import { FollowUpCard } from "@/components/FollowUpCard";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPatientMembership, hasPatientRole } from "@/lib/auth/patient-access";
 import { prisma } from "@/lib/prisma";
 
-const DEMO_USER_ID = "demo-user";
+const FOLLOW_UP_VIEW_ROLES = [
+  PatientRole.PRIMARY_CAREGIVER,
+  PatientRole.CAREGIVER,
+  PatientRole.VIEWER,
+];
+const FOLLOW_UP_MANAGE_ROLES = [PatientRole.PRIMARY_CAREGIVER, PatientRole.CAREGIVER];
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +30,20 @@ async function getFollowUps(patientId: string) {
 
 export default async function PatientFollowUpsPage({ params }: PatientFollowUpsPageProps) {
   const { id } = await params;
-  const patient = await prisma.patient.findFirst({
-    where: {
-      id,
-      createdByUserId: DEMO_USER_ID,
-    },
+  const user = await getCurrentUser();
+
+  if (!user) {
+    notFound();
+  }
+
+  const membership = await getPatientMembership(id, user.id);
+
+  if (!membership || !hasPatientRole(membership.role, FOLLOW_UP_VIEW_ROLES)) {
+    notFound();
+  }
+
+  const patient = await prisma.patient.findUnique({
+    where: { id },
     select: {
       id: true,
       fullName: true,
@@ -38,6 +55,7 @@ export default async function PatientFollowUpsPage({ params }: PatientFollowUpsP
   }
 
   const followUps = await getFollowUps(patient.id);
+  const canManageFollowUps = hasPatientRole(membership.role, FOLLOW_UP_MANAGE_ROLES);
 
   return (
     <main className="page">
@@ -50,9 +68,11 @@ export default async function PatientFollowUpsPage({ params }: PatientFollowUpsP
           <Link className="secondary-button" href={`/patients/${patient.id}`}>
             Back to patient
           </Link>
-          <Link className="primary-button" href={`/patients/${patient.id}/follow-ups/new`}>
-            Add follow-up
-          </Link>
+          {canManageFollowUps ? (
+            <Link className="primary-button" href={`/patients/${patient.id}/follow-ups/new`}>
+              Add follow-up
+            </Link>
+          ) : null}
         </div>
       </header>
 
@@ -64,9 +84,11 @@ export default async function PatientFollowUpsPage({ params }: PatientFollowUpsP
             details handy.
           </p>
           <div className="header-actions">
-            <Link className="primary-button" href={`/patients/${patient.id}/follow-ups/new`}>
-              Add follow-up
-            </Link>
+            {canManageFollowUps ? (
+              <Link className="primary-button" href={`/patients/${patient.id}/follow-ups/new`}>
+                Add follow-up
+              </Link>
+            ) : null}
             <Link className="secondary-button" href={`/patients/${patient.id}`}>
               Back to patient
             </Link>
@@ -75,7 +97,12 @@ export default async function PatientFollowUpsPage({ params }: PatientFollowUpsP
       ) : (
         <section className="medicine-list" aria-label="Follow-up appointments">
           {followUps.map((followUp) => (
-            <FollowUpCard followUp={followUp} key={followUp.id} patientId={patient.id} />
+            <FollowUpCard
+              canManageFollowUps={canManageFollowUps}
+              followUp={followUp}
+              key={followUp.id}
+              patientId={patient.id}
+            />
           ))}
         </section>
       )}

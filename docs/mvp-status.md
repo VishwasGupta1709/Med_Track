@@ -9,16 +9,15 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 ### Patient Profile
 
 - Create, list, and view patient profiles.
-- Authorization Rollout Slice 1 is complete for patient list, root dashboard patient summaries, patient detail, and patient create/detail APIs.
-- New patient creation sets `createdByUserId` to the local signed-in `User.id` and creates a `PRIMARY_CAREGIVER` `PatientMember` row.
+- Patient list, detail, and dashboard access are scoped by `PatientMember`.
+- Creating a patient also creates a `PatientMember` row for the creator as `PRIMARY_CAREGIVER`.
 
 ### Medicine Tracking
 
-- Authorization Rollout Slice 2 is complete for medicine list, add, edit, and stop pages/APIs.
-- `PRIMARY_CAREGIVER` can view, add, edit, and stop medicines.
-- `CAREGIVER` and `VIEWER` can view medicines but cannot add, edit, or stop medicines.
 - Manual medicine entry with optional dosage, form, frequency, food instruction, instructions, start date, end date, and timings.
 - Medicine list and edit flows.
+- Medicine APIs use role-based `PatientMember` authorization.
+- All `PatientMember` roles can view medicines; only `PRIMARY_CAREGIVER` can add, edit, or stop medicines.
 - Frequency/timing validation requires the entered timing count to match frequency values such as once daily, twice daily, `2`, `3`, and `4`.
 - Medicine edit supports soft-removing timings while preserving historical dose events.
 - Medicine stop flow marks a medicine as stopped and removes only future `PENDING` dose events scheduled after the stop time.
@@ -28,6 +27,7 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 
 - Schedule generation creates dose events from active medicines and timings.
 - Today's schedule page shows dose events grouped by status.
+- Schedule and dose event APIs use role-based `PatientMember` authorization.
 - Dose statuses include `PENDING`, `DUE`, `TAKEN`, `SKIPPED`, `MISSED`, and `LATE`.
 - Caregivers can confirm taken doses and skip doses.
 - Missed and due dose processing exists.
@@ -42,6 +42,7 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 ### BP Tracking
 
 - BP readings can be created, listed, and edited for correction.
+- BP reading APIs use role-based `PatientMember` authorization.
 - Validation checks systolic `1..300`, diastolic `1..200`, optional pulse `1..250`, and valid measured time.
 - UI copy is neutral and does not classify readings or provide medical interpretation.
 
@@ -49,14 +50,23 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 
 - Follow-up appointments can be created and listed.
 - Follow-up appointments can be edited for correction.
+- Follow-up APIs use role-based `PatientMember` authorization.
+- Follow-up UI pages hide edit/manage actions for users who cannot manage follow-ups.
 - Validation checks appointment date/time and supported status.
 - Follow-up API route tests cover ownership, validation, creation, edit correction, optional field normalization, and list ordering.
 - Follow-up UI is polished with neutral helper copy and navigation.
 - No reminder delivery, notification delivery, or calendar integration exists yet.
 
+### Authorization
+
+- `PatientMember` authorization hardening is complete for core MVP APIs and pages.
+- `PRIMARY_CAREGIVER` can manage patient-scoped records, including medicine create/edit/stop actions.
+- `CAREGIVER` can manage schedule/dose, BP, and follow-up records but cannot create, edit, or stop medicines.
+- `VIEWER` can view patient-scoped records but cannot manage them.
+- `createdByUserId` remains legacy metadata and should not be used as the authorization source.
+
 ## Not Implemented Yet
 
-- Full route-by-route patient-member authorization for schedule, dose, BP, and follow-up routes.
 - Production notification delivery.
 - Calendar integration.
 - BP reminder delivery.
@@ -70,12 +80,8 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 
 ## Current Limitations
 
-- Clerk auth foundation exists, with local `User` and `PatientMember` tables.
-- Patient list/detail/create now use `PatientMember` membership checks.
-- Medicine list/add/edit/stop now use `PatientMember` membership and role checks.
-- `createdByUserId = "demo-user"` is still used by schedule, dose, BP, and follow-up routes as a transition placeholder.
-- Existing demo patients need to be claimed with `npm run claim:demo-data` before they appear for a signed-in local user.
-- Patient-related routes have signed-in middleware protection, but remaining API/page authorization must still be rolled out route by route.
+- Clerk auth is backed by local `User` and `PatientMember` tables for patient-scoped authorization.
+- Legacy `createdByUserId = "demo-user"` patients may disappear from local signed-in views until claimed or backfilled into `PatientMember` rows.
 - The app is currently a local development MVP.
 - Local data is stored in local PostgreSQL and does not sync between machines.
 - There is no production deployment, production auth, or production notification service.
@@ -84,7 +90,6 @@ Latest manual MVP regression pass completed locally on 2026-05-20.
 ## Recommended Next Milestones
 
 - Plan follow-up delete or complete/cancelled status only after correction workflows are stable.
-- Continue `PatientMember` authorization rollout across schedule, dose, BP, and follow-up pages and API routes.
 - Design reminder notification delivery with explicit caregiver-controlled setup.
 - Plan BP charts and reports after the manual tracking workflow stays stable.
 - Consider OCR only after manual medicine workflow, review, and confirmation flows are stable.

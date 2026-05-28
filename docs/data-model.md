@@ -4,7 +4,7 @@
 
 ## Patient
 
-`Patient` is the root record for a person being tracked. It stores profile details and the transitional ownership field, `createdByUserId`.
+`Patient` is the root record for a person being tracked. It stores profile details and legacy ownership metadata in `createdByUserId`.
 
 Relationships:
 
@@ -14,7 +14,7 @@ Relationships:
 - One patient has many follow-up appointments.
 - One patient can have many patient members.
 
-`createdByUserId` remains a plain string during the authorization transition. For newly created patients, it is set to the creator's local `User.id`; access checks for patient list, patient detail, and patient creation now use `PatientMember`. Other feature routes are still being migrated.
+`createdByUserId` remains a plain string for legacy/demo ownership metadata and data-claim workflows. It is not the authorization source for core MVP APIs or pages; authorization should use `PatientMember`.
 
 ## User
 
@@ -34,7 +34,11 @@ Important behavior:
 - `CAREGIVER`
 - `VIEWER`
 
-Current permission helpers treat all roles as patient and medicine viewers, only `PRIMARY_CAREGIVER` as a patient editor and medicine manager, and `PRIMARY_CAREGIVER` plus `CAREGIVER` as dose/health trackers. Route-by-route enforcement is still being rolled out.
+Current role behavior:
+
+- `PRIMARY_CAREGIVER` is assigned to the patient creator and can manage patient-scoped records, including medicine create/edit/stop actions.
+- `CAREGIVER` can manage schedule/dose, BP, and follow-up records but cannot create, edit, or stop medicines.
+- `VIEWER` can view patient-scoped records but cannot manage them.
 
 ## PatientMember
 
@@ -44,8 +48,8 @@ Important behavior:
 
 - A patient/user pair is unique.
 - Deleting a patient or user cascades to related memberships.
-- New patient creation creates a `PRIMARY_CAREGIVER` membership for the creator.
-- Route-by-route enforcement is not complete yet; schedule, dose, BP, and follow-up routes remain transitional until later rollout slices.
+- `PatientMember` is the main patient-scoped authorization model for patients, medicines, schedule/dose events, BP readings, and follow-ups.
+- Legacy patients without membership rows will not appear in signed-in patient lists until claimed or backfilled.
 
 ## Medicine
 

@@ -12,13 +12,13 @@ OCR and AI are future scope only. They must never activate reminders or schedule
 
 ## MVP
 
-The current MVP supports patient profile, manual medicine entry, medicine schedule generation, dose confirmation, skipped dose tracking, missed dose tracking, patient dashboard, BP tracking, and follow-up tracking.
+The current MVP supports patient profile, manual medicine entry, medicine schedule generation, dose confirmation, skipped dose tracking, missed dose tracking, patient dashboard, BP tracking, follow-up tracking, and core patient-member authorization.
 
-BP tracking records readings only. Follow-up tracking records appointments only. Production notification delivery, BP reminder delivery, and follow-up reminder delivery are future scope.
+BP tracking records readings only. Follow-up tracking records appointments only. Patient access is scoped through local `PatientMember` rows with `PRIMARY_CAREGIVER`, `CAREGIVER`, and `VIEWER` roles. Production notification delivery, BP reminder delivery, and follow-up reminder delivery are future scope.
 
 ## Not in MVP
 
-Real auth/family roles, production notifications, BP reminder delivery, follow-up reminder delivery, calendar integration, OCR, AI prescription parsing, WhatsApp/SMS/email alerts, reports/PDF export, mobile app, diet tracking, doctor portal, and wearable integrations.
+Production notifications, BP reminder delivery, follow-up reminder delivery, calendar integration, OCR, AI prescription parsing, WhatsApp/SMS/email alerts, reports/PDF export, mobile app, diet tracking, doctor portal, and wearable integrations.
 
 ## Primary Users
 

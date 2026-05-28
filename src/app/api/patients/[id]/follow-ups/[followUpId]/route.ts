@@ -59,7 +59,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   const membership = await getPatientMembership(followUp.patientId, user.id);
 
   if (!membership) {
-    return NextResponse.json({ error: "Patient not found." }, { status: 404 });
+    return NextResponse.json({ error: "Follow-up not found." }, { status: 404 });
   }
 
   if (!hasPatientRole(membership.role, FOLLOW_UP_WRITE_ROLES)) {

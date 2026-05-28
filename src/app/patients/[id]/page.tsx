@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireCurrentUser } from "@/lib/auth/current-user";
+import { PatientRole } from "@prisma/client";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPatientMembership, hasPatientRole } from "@/lib/auth/patient-access";
 import { prisma } from "@/lib/prisma";
+
+const PATIENT_VIEW_ROLES = [
+  PatientRole.PRIMARY_CAREGIVER,
+  PatientRole.CAREGIVER,
+  PatientRole.VIEWER,
+];
 
 export const dynamic = "force-dynamic";
 
@@ -13,17 +21,19 @@ type PatientDetailPageProps = {
 
 export default async function PatientDetailPage({ params }: PatientDetailPageProps) {
   const { id } = await params;
-  const currentUser = await requireCurrentUser();
-  const patient = await prisma.patient.findFirst({
-    where: {
-      id,
-      members: {
-        some: {
-          userId: currentUser.id,
-        },
-      },
-    },
-  });
+  const user = await getCurrentUser();
+
+  if (!user) {
+    notFound();
+  }
+
+  const membership = await getPatientMembership(id, user.id);
+
+  if (!membership || !hasPatientRole(membership.role, PATIENT_VIEW_ROLES)) {
+    notFound();
+  }
+
+  const patient = await prisma.patient.findUnique({ where: { id } });
 
   if (!patient) {
     notFound();
@@ -55,10 +65,6 @@ export default async function PatientDetailPage({ params }: PatientDetailPagePro
           <div>
             <dt>Created</dt>
             <dd>{patient.createdAt.toLocaleDateString()}</dd>
-          </div>
-          <div>
-            <dt>Owner</dt>
-            <dd>{patient.createdByUserId}</dd>
           </div>
         </dl>
 

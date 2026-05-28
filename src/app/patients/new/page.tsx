@@ -1,7 +1,15 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { PatientForm } from "@/components/PatientForm";
+import { getCurrentUser } from "@/lib/auth/current-user";
 
-export default function NewPatientPage() {
+export default async function NewPatientPage() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    notFound();
+  }
+
   return (
     <main className="page">
       <header className="page-header">

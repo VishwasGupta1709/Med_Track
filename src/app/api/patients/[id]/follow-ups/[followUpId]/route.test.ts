@@ -142,7 +142,7 @@ describe("edit follow-up route", () => {
     const response = await PATCH(createRequest(), createContext());
 
     expect(response.status).toBe(404);
-    expect(await response.json()).toEqual({ error: "Patient not found." });
+    expect(await response.json()).toEqual({ error: "Follow-up not found." });
     expect(authMocks.getPatientMembership).toHaveBeenCalledWith("patient-1", "user-1");
     expect(prismaMocks.followUpUpdate).not.toHaveBeenCalled();
   });
